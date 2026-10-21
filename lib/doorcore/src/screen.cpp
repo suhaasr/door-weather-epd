@@ -180,7 +180,7 @@ void drawAttirePanel(Adafruit_GFX& g, int x0, int top, int bottom, const char* l
   text(g, kBodyBold, tx, top + 30, label, kBlack);
   drawTemperature(g, tx, top + 106, temp, unit);
   text(g, kTitle, tx, top + 150, tierName(tier), kBlack);
-  textWrapped(g, kSmall, tx, top + 176, 172, 21, tierAdvice(tier), kBlack);
+  if (bottom - top >= 220) textWrapped(g, kSmall, tx, top + 176, 172, 21, tierAdvice(tier), kBlack);
 
   // Keep figures clear of the panel label; shrink them when the low-battery
   // banner takes vertical space.
@@ -217,13 +217,57 @@ void formatHour(int hour, char* buf, int len) {
   snprintf(buf, len, "%d %s", h, (hour % 24) < 12 ? "AM" : "PM");
 }
 
+void drawReminderStrip(Adafruit_GFX& g, int top, int h, const char* const* items, int n) {
+  g.fillRoundRect(12, top, kScreenW - 24, h, 12, kBlack);
+  g.fillRoundRect(16, top + 4, kScreenW - 32, h - 8, 9, kWhite);
+  const int cy = top + h / 2;
+  g.fillCircle(44, cy, 16, kBlack);
+  g.fillRoundRect(41, cy - 11, 6, 14, 2, kWhite);
+  g.fillCircle(44, cy + 8, 3, kWhite);
+
+  const int x0 = 74, right = kScreenW - 30, gap = 34;
+  auto total = [&](const GFXfont* f, int count, const char* suffix) {
+    int w = 0;
+    for (int i = 0; i < count; ++i) w += textWidth(f, items[i]) + (i ? gap : 0);
+    if (suffix) w += gap + textWidth(kBody, suffix);
+    return w;
+  };
+  const GFXfont* f = kTitle;
+  int shown = n;
+  char more[24] = "";
+  if (total(kTitle, n, nullptr) > right - x0) {
+    f = kBodyBold;
+    while (shown > 1) {
+      snprintf(more, sizeof more, "+%d more", n - shown);
+      if (total(f, shown, shown < n ? more : nullptr) <= right - x0) break;
+      --shown;
+    }
+    if (shown < n) snprintf(more, sizeof more, "+%d more", n - shown);
+  }
+  const int baseline = cy + (f == kTitle ? 12 : 9);
+  int x = x0;
+  for (int i = 0; i < shown; ++i) {
+    if (i) {
+      g.fillCircle(x + gap / 2, cy, 4, kBlack);
+      x += gap;
+    }
+    text(g, f, x, baseline, items[i], kBlack);
+    x += textWidth(f, items[i]);
+  }
+  if (shown < n) text(g, kBody, x + gap, baseline, more, kBlack);
+}
+
 void drawWeatherScreen(Adafruit_GFX& g, const WeatherScreen& s) {
   g.fillScreen(kWhite);
   drawHeader(g, s);
   drawRain(g, s);
 
   const bool low = batteryLevel(s.batteryPercent) != BatteryLevel::Ok;
-  const int top = 184;
+  int top = 184;
+  if (s.reminderCount > 0) {
+    drawReminderStrip(g, top, 54, s.reminders, s.reminderCount);
+    top += 60;
+  }
   const int bottom = low ? 408 : 444;
   drawAttirePanel(g, 0, top, bottom, "FEELS LIKE LOW", s.feelsLow, s.unit, s.lowTier);
   g.fillRect(kScreenW / 2 - 1, top + 12, 2, bottom - top - 24, kBlack);
@@ -305,6 +349,54 @@ void drawSetupScreen(Adafruit_GFX& g, const char* apName, const char* apPassword
   snprintf(foot, sizeof foot,
            "Setup closes after %d minutes. To start it again: press RESET, then hold BOOT.",
            portalMinutes);
+  textCentered(g, kSmall, kScreenW / 2, kScreenH - 20, foot, kBlack);
+}
+
+void drawRemindersScreen(Adafruit_GFX& g, const char* url, const char* altUrl, const char* pin,
+                         int idleMinutes) {
+  g.fillScreen(kWhite);
+  g.fillRect(0, 0, kScreenW, 70, kBlack);
+  text(g, kHeadline, 24, 50, "Reminders", kWhite);
+
+  const int x = 92;
+  auto bullet = [&](int n, int y) {
+    char num[4];
+    snprintf(num, sizeof num, "%d", n);
+    g.fillCircle(50, y - 9, 22, kBlack);
+    textCentered(g, kTitle, 50, y + 3, num, kWhite);
+  };
+  auto box = [&](int y, const char* s) {
+    const int w = textWidth(kTitle, s) + 40;
+    g.drawRect(x, y - 16, w, 50, kBlack);
+    g.drawRect(x + 1, y - 15, w - 2, 48, kBlack);
+    text(g, kTitle, x + 20, y + 20, s, kBlack);
+  };
+
+  int y = 120;
+  bullet(1, y);
+  text(g, kBody, x, y, "On a phone on your home Wi-Fi, open:", kBlack);
+  y += 30;
+  box(y, url);
+  if (altUrl && *altUrl) {
+    char alt[64];
+    snprintf(alt, sizeof alt, "or %s", altUrl);
+    text(g, kBody, x + textWidth(kTitle, url) + 60, y + 18, alt, kBlack);
+  }
+  y += 90;
+  bullet(2, y);
+  text(g, kBody, x, y, "Enter this PIN:", kBlack);
+  y += 30;
+  box(y, pin);
+  y += 90;
+  bullet(3, y);
+  textWrapped(g, kBody, x, y, kScreenW - x - 30, 30,
+              "Add or delete reminders, then tap Done. Wi-Fi and ZIP code settings are "
+              "on that page too.",
+              kBlack);
+
+  g.fillRect(0, kScreenH - 54, kScreenW, 2, kBlack);
+  char foot[96];
+  snprintf(foot, sizeof foot, "Closes after %d minutes without activity.", idleMinutes);
   textCentered(g, kSmall, kScreenW / 2, kScreenH - 20, foot, kBlack);
 }
 

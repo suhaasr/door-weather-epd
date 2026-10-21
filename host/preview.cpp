@@ -115,5 +115,31 @@ int main(int argc, char** argv) {
     c.print(tierName(tiers[i]));
   }
   save(c, dir, "outfits");
+  // Reminders
+  s = base();
+  s.weekday = "Tuesday";
+  strcpy(s.date, "2026-10-20");
+  temps(s, 52, 66);
+  s.rain = {false, false, 3, -1, -1};
+  const char* tue[] = {"Pack lunch", "Take out the recycling"};
+  s.reminders[0] = tue[0];
+  s.reminders[1] = tue[1];
+  s.reminderCount = 2;
+  drawWeatherScreen(c, s);
+  save(c, dir, "reminders");
+
+  s.rain = {true, false, 70, 6, 13};
+  temps(s, 38, 47);
+  const char* many[] = {"Pack lunch", "Dentist 9:30 AM", "Return library books",
+                        "Water the plants"};
+  for (int i = 0; i < 4; ++i) s.reminders[i] = many[i];
+  s.reminderCount = 4;
+  s.batteryPercent = 3;
+  drawWeatherScreen(c, s);
+  save(c, dir, "reminders_low_battery");
+
+  drawRemindersScreen(c, "http://192.168.1.23", "http://doordisplay.local", "482913", 10);
+  save(c, dir, "reminders_setup");
+
   return 0;
 }

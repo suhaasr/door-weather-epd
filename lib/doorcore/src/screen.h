@@ -3,6 +3,7 @@
 
 #include "attire.h"
 #include "forecast.h"
+#include "reminders.h"
 
 namespace door {
 
@@ -24,6 +25,8 @@ struct WeatherScreen {
   Tier highTier;
   RainOutlook rain;
   int batteryPercent;
+  const char* reminders[kMaxReminders];  // reminders for the day shown
+  int reminderCount;
 };
 
 void drawWeatherScreen(Adafruit_GFX& g, const WeatherScreen& s);
@@ -37,6 +40,10 @@ void drawCriticalBatteryScreen(Adafruit_GFX& g, int batteryPercent,
 void drawSetupScreen(Adafruit_GFX& g, const char* apName, const char* apPassword,
                      const char* portalIp,
                      int portalMinutes);
+
+// Shown while the reminders page is served on the home network.
+void drawRemindersScreen(Adafruit_GFX& g, const char* url, const char* altUrl, const char* pin,
+                         int idleMinutes);
 
 // Generic title + body message (errors, setup results).
 void drawMessageScreen(Adafruit_GFX& g, const char* title, const char* body,

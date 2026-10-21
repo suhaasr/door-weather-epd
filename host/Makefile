@@ -1,6 +1,7 @@
 # Host build: unit tests and PNG previews of every screen.
 #   make test     run unit tests
 #   make preview  render docs/img/*.png
+#   make server   try the reminders page at http://localhost:8080
 CXX ?= g++
 CC ?= gcc
 CORE := ../lib/doorcore/src
@@ -16,7 +17,7 @@ GFX_SRCS := $(DEPS)/gfx/Adafruit_GFX.cpp
 CORE_OBJS := $(patsubst $(CORE)/%.cpp,$(BUILD)/core/%.o,$(CORE_SRCS))
 GFX_OBJS := $(BUILD)/gfx/Adafruit_GFX.o
 
-.PHONY: all test preview clean deps
+.PHONY: all test preview server clean deps
 all: test preview
 
 deps:
@@ -42,6 +43,12 @@ $(BUILD)/tests: $(BUILD)/tests.o $(CORE_OBJS) $(GFX_OBJS)
 
 $(BUILD)/preview: $(BUILD)/preview.o $(CORE_OBJS) $(GFX_OBJS)
 	$(CXX) $^ -o $@
+
+$(BUILD)/server: $(BUILD)/server.o $(CORE_OBJS) $(GFX_OBJS)
+	$(CXX) $^ -o $@
+
+server: $(BUILD)/server
+	$(BUILD)/server
 
 test: $(BUILD)/tests
 	$(BUILD)/tests

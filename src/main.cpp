@@ -5,12 +5,14 @@
 // refreshes, which is what makes months of battery life possible.
 
 #include <Arduino.h>
+#include <ESPmDNS.h>
 #include <GxEPD2_BW.h>
 #include <HTTPClient.h>
 #include <Preferences.h>
 #include <SPI.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
+#include <WebServer.h>
 #include <WiFiManager.h>
 #include <esp_sleep.h>
 #include <esp_sntp.h>
@@ -21,6 +23,8 @@
 #include "config.h"
 #include "drift.h"
 #include "forecast.h"
+#include "portal.h"
+#include "reminders.h"
 #include "schedule.h"
 #include "screen.h"
 #include "setup_password.h"
@@ -88,6 +92,21 @@ void saveTz(const char* tz) {
   Preferences p;
   p.begin("door", false);
   p.putString("tz", tz);
+  p.end();
+}
+
+void loadReminders(ReminderList& list) {
+  Preferences p;
+  p.begin("door", true);
+  String data = p.getString("rem", "");
+  p.end();
+  parseReminders(data.c_str(), list);
+}
+
+void saveReminders(const ReminderList& list) {
+  Preferences p;
+  p.begin("door", false);
+  p.putString("rem", serializeReminders(list).c_str());
   p.end();
 }
 
@@ -254,6 +273,65 @@ bool runSetupPortal(Settings& s, int batteryPct) {
   return true;
 }
 
+enum class RemindersResult { Done, WifiSetup, NoWifi };
+
+// Serves the reminders page on the home network until the user taps Done or
+// it's idle for kRemindersIdleMinutes. A PIN shown on the e-ink screen gates
+// access, so only someone who can see the display can edit reminders.
+RemindersResult runRemindersPage(const Settings& s) {
+  if (!connectWifi()) return RemindersResult::NoWifi;
+  ReminderList list;
+  loadReminders(list);
+  PortalState st;
+  initPortal(st, &list, esp_random);
+  if (syncTime(s.tz)) {
+    time_t now = time(nullptr);
+    struct tm t;
+    localtime_r(&now, &t);
+    formatIsoDate(t, st.today, sizeof st.today);
+    st.todayWeekday = t.tm_wday;
+    if (pruneExpiredReminders(list, st.today)) saveReminders(list);
+  }
+
+  const bool mdns = MDNS.begin(kMdnsName);
+  WebServer server(80);
+  uint32_t lastActivity = millis();
+  server.onNotFound([&]() {
+    lastActivity = millis();
+    auto arg = [&](const char* name) { return std::string(server.arg(name).c_str()); };
+    PortalResponse r = handlePortalRequest(st, server.method() == HTTP_POST ? "POST" : "GET",
+                                           server.uri().c_str(), arg);
+    if (st.changed) {
+      saveReminders(list);
+      st.changed = false;
+    }
+    server.sendHeader("Cache-Control", "no-store");
+    if (!r.location.empty()) server.sendHeader("Location", r.location.c_str());
+    server.send(r.status, "text/html; charset=utf-8", r.body.c_str());
+  });
+  server.begin();
+
+  char url[32], alt[48] = "";
+  snprintf(url, sizeof url, "http://%s", WiFi.localIP().toString().c_str());
+  if (mdns) snprintf(alt, sizeof alt, "http://%s.local", kMdnsName);
+  showScreen([&](Adafruit_GFX& g) {
+    drawRemindersScreen(g, url, alt, st.pin, kRemindersIdleMinutes);
+  });
+
+  const uint32_t idleMs = kRemindersIdleMinutes * 60000UL;
+  while (!st.done && millis() - lastActivity < idleMs) {
+    server.handleClient();
+    delay(2);
+  }
+  for (uint32_t t0 = millis(); millis() - t0 < 300;) {  // let the last response go out
+    server.handleClient();
+    delay(2);
+  }
+  server.stop();
+  if (mdns) MDNS.end();
+  return st.wifiSetupRequested ? RemindersResult::WifiSetup : RemindersResult::Done;
+}
+
 [[noreturn]] void sleepSeconds(double seconds) {
   wifiOff();
   esp_sleep_enable_timer_wakeup(correctedSleepMicros(seconds, rtc.sleepCorrection));
@@ -332,8 +410,12 @@ void setup() {
   Settings settings = loadSettings();
   applyTz(settings.tz);
 
+  // RESET then BOOT opens the reminders page (which links to Wi-Fi setup); if
+  // the home network is unreachable, go straight to the Wi-Fi setup hotspot.
   bool wantSetup = !settings.hasLocation;
-  if (!timerWake && !wantSetup) wantSetup = bootButtonHeld();
+  if (!timerWake && !wantSetup && bootButtonHeld()) {
+    wantSetup = runRemindersPage(settings) != RemindersResult::Done;
+  }
   if (wantSetup) {
     if (!runSetupPortal(settings, battery)) sleepUntilReset();
   }
@@ -394,6 +476,14 @@ void setup() {
     fillWeatherScreen(w, settings, rtc.forecast, day, shown, tomorrow,
                       tomorrow ? 0 : local.tm_hour, rtc.forecastFetchedAt, !fetched, next,
                       battery);
+    ReminderList reminders;
+    loadReminders(reminders);
+    char today[11];
+    formatIsoDate(local, today, sizeof today);
+    if (pruneExpiredReminders(reminders, today)) saveReminders(reminders);
+    int idx[kMaxReminders];
+    w.reminderCount = remindersFor(reminders, wanted, shown.tm_wday, idx);
+    for (int i = 0; i < w.reminderCount; ++i) w.reminders[i] = reminders.items[idx[i]].text;
     showScreen([&](Adafruit_GFX& g) { drawWeatherScreen(g, w); });
   } else if (!timerWake || recoveredFromCritical || fetched || rtc.forecast.valid) {
     char body[256], when[12];

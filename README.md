@@ -18,6 +18,10 @@ Below 5% battery a black recharge banner appears at the bottom; at 1% the entire
 |---|---|---|---|
 | ![](docs/img/setup.png) | ![](docs/img/offline.png) | ![](docs/img/evening_setup.png) | ![](docs/img/outfits.png) |
 
+| Reminders | Reminders + rain + low battery | Reminders page (PIN) |
+|---|---|---|
+| ![](docs/img/reminders.png) | ![](docs/img/reminders_low_battery.png) | ![](docs/img/reminders_setup.png) |
+
 These images are rendered by the same drawing code the firmware uses (`make -C host preview`).
 
 ## Parts
@@ -92,9 +96,22 @@ Other settings in `src/config.h`: refresh window (`kRefreshStartHour`/`kRefreshE
 3. Tap **Configure WiFi**, choose your network, enter its password and your **5-digit ZIP code**, and Save.
 
 The device checks the ZIP code, stores the Wi-Fi credentials and location in flash, and draws the forecast.
-To change Wi-Fi or ZIP later, press **RESET** and then hold **BOOT** for 3 seconds. The hotspot closes after
-10 minutes. If Wi-Fi is down at a scheduled refresh, it keeps showing the last forecast marked
+To change Wi-Fi or ZIP later, press **RESET**, hold **BOOT** for 3 seconds, and tap **Change Wi-Fi or ZIP
+code** on the reminders page (below); if the saved network can't be reached, it goes straight to the hotspot.
+The hotspot closes after 10 minutes. If Wi-Fi is down at a scheduled refresh, it keeps showing the last forecast marked
 "Offline - last update …" and tries again next hour.
+
+### Reminders
+
+Press **RESET**, then hold **BOOT** for 3 seconds. The display shows a local address (e.g. `http://192.168.1.23`
+or `http://doordisplay.local`) and a one-time 6-digit PIN. Open it on a phone on your home Wi-Fi, enter the PIN,
+and add reminders that repeat on chosen weekdays (e.g. *Pack lunch* on Tue and Thu) or happen on one future date.
+Tap **Done** to redraw the display; the page also closes after 10 idle minutes.
+
+- Up to 8 reminders, 40 characters each. One-off reminders are deleted automatically once their date passes.
+- Reminders for the day shown appear in a bold strip under the rain banner; after 6 PM, tomorrow's.
+  If they don't all fit on one line, the strip ends with "+N more".
+- A new PIN is generated each time; 5 wrong PINs close the page until the next RESET + BOOT.
 
 ### Security notes
 
@@ -103,7 +120,9 @@ To change Wi-Fi or ZIP later, press **RESET** and then hold **BOOT** for 3 secon
   screen can join. The portal's firmware-upload page is disabled, and the saved password is never shown.
 - The Wi-Fi password is stored unencrypted in the ESP32's flash, so someone with physical access and a USB
   cable could read it. Mount it indoors, or put it on a guest/IoT network.
-- The device makes only outbound requests (Open-Meteo, Zippopotam.us, NTP) and turns Wi-Fi off between refreshes.
+- The reminders page is plain HTTP on your home network and only runs while you have it open. It never
+  shows or accepts the Wi-Fi password; access needs the PIN on the screen.
+- Outside setup and the reminders page, the device makes only outbound requests (Open-Meteo, Zippopotam.us, NTP) and turns Wi-Fi off between refreshes.
   HTTPS certificates are not verified: a man-in-the-middle could show fake weather, but no credentials or
   personal data are sent.
 
@@ -131,5 +150,6 @@ host/           desktop unit tests and PNG preview renderer for lib/doorcore
 ```sh
 make -C host test      # unit tests (needs g++ and git)
 make -C host preview   # regenerate docs/img/*.png
+make -C host server    # try the reminders page at http://localhost:8080 (PIN is printed)
 pio run                # firmware build
 ```

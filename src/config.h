@@ -15,6 +15,8 @@ constexpr char kTemperatureUnit = 'F';
 // Setup portal.
 constexpr const char* kSetupApName = "DoorDisplay-Setup";
 constexpr int kSetupPortalMinutes = 10;
+constexpr int kRemindersIdleMinutes = 10;  // reminders page closes after this idle time
+constexpr const char* kMdnsName = "doordisplay";  // http://doordisplay.local
 constexpr int kSetupButtonHoldMs = 3000;  // window after RESET to press BOOT
 
 // While the battery is critically low, check for charging this often.

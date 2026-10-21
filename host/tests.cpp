@@ -5,6 +5,7 @@
 #include <time.h>
 
 #include <fstream>
+#include <map>
 #include <sstream>
 #include <string>
 
@@ -15,6 +16,8 @@
 #include "schedule.h"
 #include "screen.h"
 #include "setup_password.h"
+#include "portal.h"
+#include "reminders.h"
 #include "tz.h"
 
 #include <Adafruit_GFX.h>
@@ -356,6 +359,173 @@ static void testSetupPassword() {
   CHECK(strlen(tiny) == 3);
 }
 
+static void testReminders() {
+  char out[kReminderTextMax + 1];
+  sanitizeReminderText("  Pack\t lunch\n ", out, sizeof out);
+  CHECK(strcmp(out, "Pack lunch") == 0);
+  sanitizeReminderText("Kid\xE2\x80\x99s \xE2\x80\x9Cshow\xE2\x80\x9D \xE2\x80\x94 gym \xF0\x9F\x8D\x8E!", out, sizeof out);
+  CHECK(strcmp(out, "Kid's \"show\" - gym !") == 0);
+  sanitizeReminderText("0123456789012345678901234567890123456789XYZ", out, sizeof out);
+  CHECK(strlen(out) == static_cast<size_t>(kReminderTextMax));
+  char small[6];
+  sanitizeReminderText("abcd efgh", small, sizeof small);
+  CHECK(strcmp(small, "abcd") == 0);  // no dangling space
+
+  CHECK(isValidIsoDate("2026-02-28"));
+  CHECK(isValidIsoDate("2028-02-29"));
+  CHECK(!isValidIsoDate("2026-02-29"));
+  CHECK(!isValidIsoDate("2026-13-01"));
+  CHECK(!isValidIsoDate("2026-1-01"));
+  CHECK(!isValidIsoDate(""));
+
+  ReminderList list;
+  parseReminders("20||Pack lunch\n0|2026-10-30|Dentist\nbad line\n0||no schedule\n"
+                 "3|2026-10-30|both\n0|2026-02-30|bad date\n127||Water plants",
+                 list);
+  CHECK(list.count == 3);
+  CHECK(list.items[0].weekdays == 0x14);  // Tue + Thu
+  CHECK(strcmp(list.items[1].date, "2026-10-30") == 0);
+  ReminderList again;
+  parseReminders(serializeReminders(list).c_str(), again);
+  CHECK(again.count == 3 && strcmp(again.items[2].text, "Water plants") == 0);
+
+  CHECK(describeSchedule(list.items[0]) == "Tue, Thu");
+  CHECK(describeSchedule(list.items[1]) == "Fri 2026-10-30");
+  CHECK(describeSchedule(list.items[2]) == "Every day");
+  Reminder wk = {0x3E, "", "x"};
+  CHECK(describeSchedule(wk) == "Weekdays");
+
+  int idx[kMaxReminders];
+  CHECK(remindersFor(list, "2026-10-20", 2, idx) == 2);  // Tuesday
+  CHECK(idx[0] == 0 && idx[1] == 2);
+  CHECK(remindersFor(list, "2026-10-21", 3, idx) == 1);  // Wednesday
+  CHECK(remindersFor(list, "2026-10-30", 5, idx) == 2);  // the dentist Friday
+
+  CHECK(!pruneExpiredReminders(list, "2026-10-30"));
+  CHECK(pruneExpiredReminders(list, "2026-10-31"));
+  CHECK(list.count == 2);
+  CHECK(!pruneExpiredReminders(list, ""));
+
+  for (int i = list.count; i < kMaxReminders; ++i) CHECK(addReminder(list, wk));
+  CHECK(!addReminder(list, wk));
+  CHECK(removeReminder(list, 0) && list.count == kMaxReminders - 1);
+  CHECK(!removeReminder(list, 99));
+}
+
+static uint32_t portalSeq;
+static uint32_t portalRandom() { return portalSeq++ * 2654435761u; }
+
+static void testPortal() {
+  ReminderList list = {};
+  PortalState st;
+  portalSeq = 1;
+  initPortal(st, &list, portalRandom);
+  CHECK(strlen(st.pin) == 6 && strlen(st.token) == 16);
+  strcpy(st.today, "2026-10-21");
+  st.todayWeekday = 3;
+  std::map<std::string, std::string> a;
+  auto arg = [&](const char* n) { auto it = a.find(n); return it == a.end() ? std::string() : it->second; };
+  auto req = [&](const char* m, const char* p) { return handlePortalRequest(st, m, p, arg); };
+
+  PortalResponse r = req("GET", "/");
+  CHECK(r.status == 200 && r.body.find("name='pin'") != std::string::npos);
+  CHECK(r.body.find(st.token) == std::string::npos);  // token only after the PIN
+
+  a = {{"text", "Pack lunch"}, {"d2", "1"}};
+  r = req("POST", "/add");
+  CHECK(r.status == 403 && list.count == 0);  // no token
+  a["t"] = "0000000000000000";
+  r = req("POST", "/add");
+  CHECK(r.status == 403 && list.count == 0);  // wrong token
+
+  a = {{"pin", "000000"}};
+  if (strcmp(st.pin, "000000") == 0) a["pin"] = "111111";
+  r = req("POST", "/login");
+  CHECK(r.status == 403 && st.failedPins == 1);
+  CHECK(r.body.find("4 tries left") != std::string::npos);
+  a = {{"pin", st.pin}};
+  r = req("POST", "/login");
+  CHECK(r.status == 303 && r.location == std::string("/?t=") + st.token);
+
+  const std::string t = st.token;
+  a = {{"t", t}, {"text", "Pack lunch"}, {"d2", "1"}, {"d4", "1"}};
+  r = req("POST", "/add");
+  CHECK(r.status == 303 && r.location.find("m=added") != std::string::npos);
+  CHECK(list.count == 1 && list.items[0].weekdays == 0x14 && st.changed);
+  st.changed = false;
+
+  a = {{"t", t}, {"text", "<b>Dentist</b>"}, {"date", "2026-10-30"}};
+  r = req("POST", "/add");
+  CHECK(list.count == 2 && strcmp(list.items[1].date, "2026-10-30") == 0);
+  a = {{"t", t}, {"text", "x"}, {"date", "2026-10-20"}};
+  CHECK(req("POST", "/add").location.find("e_past") != std::string::npos);
+  a = {{"t", t}, {"text", "x"}, {"date", "2026-10-22"}, {"d1", "1"}};
+  CHECK(req("POST", "/add").location.find("e_both") != std::string::npos);
+  a = {{"t", t}, {"text", "x"}};
+  CHECK(req("POST", "/add").location.find("e_when") != std::string::npos);
+  a = {{"t", t}, {"text", "   "}, {"d1", "1"}};
+  CHECK(req("POST", "/add").location.find("e_text") != std::string::npos);
+  a = {{"t", t}, {"text", "x"}, {"date", "2026-13-01"}};
+  CHECK(req("POST", "/add").location.find("e_date") != std::string::npos);
+  CHECK(list.count == 2);
+
+  a = {{"t", t}, {"m", "added"}};
+  r = req("GET", "/");
+  CHECK(r.status == 200);
+  CHECK(r.body.find("Reminder added.") != std::string::npos);
+  CHECK(r.body.find("Tue, Thu") != std::string::npos);
+  CHECK(r.body.find("&lt;b&gt;Dentist&lt;/b&gt;") != std::string::npos);
+  CHECK(r.body.find("<b>Dentist</b>") == std::string::npos);
+  CHECK(r.body.find("Today is Wednesday 2026-10-21") != std::string::npos);
+
+  a = {{"t", t}, {"i", "0"}};
+  r = req("POST", "/delete");
+  CHECK(list.count == 1 && strcmp(list.items[0].text, "<b>Dentist</b>") == 0);
+  a = {{"t", t}, {"i", "7"}};
+  req("POST", "/delete");
+  CHECK(list.count == 1);
+
+  a = {{"t", t}};
+  r = req("POST", "/done");
+  CHECK(r.status == 200 && st.done && !st.wifiSetupRequested);
+  CHECK(req("GET", "/").status == 410);
+
+  // Wi-Fi setup request, and PIN lockout.
+  initPortal(st, &list, portalRandom);
+  a = {{"t", st.token}};
+  req("POST", "/wifi");
+  CHECK(st.done && st.wifiSetupRequested);
+  initPortal(st, &list, portalRandom);
+  a = {{"pin", "abc"}};
+  for (int i = 0; i < kPortalMaxPinAttempts; ++i) req("POST", "/login");
+  CHECK(st.done);
+  a = {{"pin", st.pin}};
+  CHECK(req("POST", "/login").status == 410);
+  CHECK(htmlEscape("a&'\"<>") == "a&amp;&#39;&quot;&lt;&gt;");
+}
+
+static void testReminderRendering() {
+  GFXcanvas1 canvas(kScreenW, kScreenH);
+  WeatherScreen s = {};
+  s.weekday = "Tuesday";
+  strcpy(s.date, "2026-10-20");
+  s.feelsLow = 50;
+  s.feelsHigh = 60;
+  s.unit = 'F';
+  s.batteryPercent = 80;
+  drawWeatherScreen(canvas, s);
+  int without = blackPixels(canvas, 12, 184, kScreenW - 12, 238);
+  const char* items[] = {"Pack lunch", "Take out the recycling", "Dentist 9:30 AM",
+                         "Water the plants"};
+  for (int i = 0; i < 4; ++i) s.reminders[i] = items[i];
+  s.reminderCount = 4;
+  drawWeatherScreen(canvas, s);
+  CHECK(blackPixels(canvas, 12, 184, kScreenW - 12, 238) > without + 2000);
+  s.batteryPercent = 3;
+  drawWeatherScreen(canvas, s);
+  CHECK(blackPixels(canvas, 0, 410, kScreenW, kScreenH) > kScreenW * 70 * 3 / 4);
+}
+
 int main() {
   testBattery();
   testSchedule();
@@ -366,6 +536,9 @@ int main() {
   testZip();
   testRendering();
   testSetupPassword();
+  testReminders();
+  testPortal();
+  testReminderRendering();
   printf("%d checks, %d failures\n", checks, failures);
   return failures ? 1 : 0;
 }
