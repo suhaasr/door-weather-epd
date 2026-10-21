@@ -1,0 +1,7 @@
+{
+  "name": "doorcore",
+  "version": "1.0.0",
+  "description": "Hardware-independent logic and rendering for the door weather display",
+  "frameworks": "*",
+  "platforms": "*"
+}
