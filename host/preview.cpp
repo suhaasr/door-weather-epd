@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
   drawCriticalBatteryScreen(c, 1, "Wednesday 2026-10-21 7:00 AM");
   save(c, dir, "critical_battery");
 
-  drawSetupScreen(c, "DoorDisplay-Setup", "192.168.4.1", 10);
+  drawSetupScreen(c, "DoorDisplay-Setup", "k7mq4xh2pd", "192.168.4.1", 10);
   save(c, dir, "setup");
 
   drawMessageScreen(c, "No weather data",

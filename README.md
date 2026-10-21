@@ -86,14 +86,26 @@ Other settings in `src/config.h`: refresh window (`kRefreshStartHour`/`kRefreshE
 
 ### Connecting to Wi-Fi
 
-1. On first boot the display shows setup instructions and opens a Wi-Fi hotspot called **DoorDisplay-Setup**.
-2. Join it from your phone; the setup page opens automatically (or browse to `http://192.168.4.1`).
+1. On first boot the display shows setup instructions and opens a Wi-Fi hotspot called **DoorDisplay-Setup**,
+   protected by a random password shown on the screen.
+2. Join it from your phone with that password; the setup page opens automatically (or browse to `http://192.168.4.1`).
 3. Tap **Configure WiFi**, choose your network, enter its password and your **5-digit ZIP code**, and Save.
 
 The device checks the ZIP code, stores the Wi-Fi credentials and location in flash, and draws the forecast.
 To change Wi-Fi or ZIP later, press **RESET** and then hold **BOOT** for 3 seconds. The hotspot closes after
 10 minutes. If Wi-Fi is down at a scheduled refresh, it keeps showing the last forecast marked
 "Offline - last update …" and tries again next hour.
+
+### Security notes
+
+- The setup hotspot uses WPA2 with a new random 10-character password every time setup starts, so your home
+  Wi-Fi password is encrypted over the air while you type it into the portal. Only someone who can see the
+  screen can join. The portal's firmware-upload page is disabled, and the saved password is never shown.
+- The Wi-Fi password is stored unencrypted in the ESP32's flash, so someone with physical access and a USB
+  cable could read it. Mount it indoors, or put it on a guest/IoT network.
+- The device makes only outbound requests (Open-Meteo, Zippopotam.us, NTP) and turns Wi-Fi off between refreshes.
+  HTTPS certificates are not verified: a man-in-the-middle could show fake weather, but no credentials or
+  personal data are sent.
 
 ## How it behaves
 

@@ -23,6 +23,7 @@
 #include "forecast.h"
 #include "schedule.h"
 #include "screen.h"
+#include "setup_password.h"
 #include "tz.h"
 
 using namespace door;
@@ -203,8 +204,14 @@ bool bootButtonHeld() {
 // Runs the captive portal. Returns true once Wi-Fi works and the ZIP code
 // resolves to a location.
 bool runSetupPortal(Settings& s, int batteryPct) {
+  // A fresh WPA2 password per session keeps the home Wi-Fi password encrypted
+  // over the air while it's typed into the portal. esp_random() is a hardware
+  // RNG once the radio is on.
+  WiFi.mode(WIFI_STA);
+  char apPassword[kSetupPasswordLength + 1];
+  makeSetupPassword(esp_random, apPassword, sizeof apPassword);
   showScreen([&](Adafruit_GFX& g) {
-    drawSetupScreen(g, kSetupApName, "192.168.4.1", kSetupPortalMinutes);
+    drawSetupScreen(g, kSetupApName, apPassword, "192.168.4.1", kSetupPortalMinutes);
   });
 
   WiFiManager wm;
@@ -219,7 +226,7 @@ bool runSetupPortal(Settings& s, int batteryPct) {
   std::vector<const char*> menu = {"wifi", "exit"};
   wm.setMenu(menu);
 
-  bool connected = wm.startConfigPortal(kSetupApName);
+  bool connected = wm.startConfigPortal(kSetupApName, apPassword);
   const char* zip = zipParam.getValue();
   if (isValidZip(zip)) snprintf(s.zip, sizeof s.zip, "%s", zip);
 

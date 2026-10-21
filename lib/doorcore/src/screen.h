@@ -34,7 +34,8 @@ void drawCriticalBatteryScreen(Adafruit_GFX& g, int batteryPercent,
                                const char* lastUpdate);
 
 // Instructions shown while the Wi-Fi setup portal is running.
-void drawSetupScreen(Adafruit_GFX& g, const char* apName, const char* portalIp,
+void drawSetupScreen(Adafruit_GFX& g, const char* apName, const char* apPassword,
+                     const char* portalIp,
                      int portalMinutes);
 
 // Generic title + body message (errors, setup results).

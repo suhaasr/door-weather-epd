@@ -263,32 +263,43 @@ void drawCriticalBatteryScreen(Adafruit_GFX& g, int pct, const char* lastUpdate)
                "Updates resume automatically once it is charged.", kWhite);
 }
 
-void drawSetupScreen(Adafruit_GFX& g, const char* apName, const char* portalIp,
-                     int portalMinutes) {
+void drawSetupScreen(Adafruit_GFX& g, const char* apName, const char* apPassword,
+                     const char* portalIp, int portalMinutes) {
   g.fillScreen(kWhite);
   g.fillRect(0, 0, kScreenW, 70, kBlack);
   text(g, kHeadline, 24, 50, "Wi-Fi setup", kWhite);
 
-  char step[160];
   const int x = 92, w = kScreenW - x - 30;
-  int y = 128;
-  const char* steps[3];
-  char s1[96], s2[128];
-  snprintf(s1, sizeof s1, "On your phone, join the Wi-Fi network \"%s\".", apName);
-  snprintf(s2, sizeof s2,
+  auto bullet = [&](int n, int y) {
+    char num[4];
+    snprintf(num, sizeof num, "%d", n);
+    g.fillCircle(50, y - 9, 22, kBlack);
+    textCentered(g, kTitle, 50, y + 3, num, kWhite);
+  };
+
+  int y = 120;
+  char line[160];
+  bullet(1, y);
+  snprintf(line, sizeof line, "On your phone, join the Wi-Fi network \"%s\" with password:", apName);
+  y += textWrapped(g, kBody, x, y, w, 30, line, kBlack) * 30;
+  const int boxW = textWidth(kTitle, apPassword) + 40;
+  g.drawRect(x, y - 16, boxW, 50, kBlack);
+  g.drawRect(x + 1, y - 15, boxW - 2, 48, kBlack);
+  text(g, kTitle, x + 20, y + 20, apPassword, kBlack);
+  y += 80;
+
+  bullet(2, y);
+  snprintf(line, sizeof line,
            "A setup page opens automatically. If it doesn't, open http://%s in a browser.",
            portalIp);
-  steps[0] = s1;
-  steps[1] = s2;
-  steps[2] = "Tap \"Configure WiFi\", pick your home network, enter its password and "
-             "your 5-digit ZIP code, then tap Save.";
-  for (int i = 0; i < 3; ++i) {
-    g.fillCircle(50, y - 9, 22, kBlack);
-    snprintf(step, sizeof step, "%d", i + 1);
-    textCentered(g, kTitle, 50, y + 3, step, kWhite);
-    int lines = textWrapped(g, kBody, x, y, w, 32, steps[i], kBlack);
-    y += lines * 32 + 36;
-  }
+  y += textWrapped(g, kBody, x, y, w, 30, line, kBlack) * 30 + 22;
+
+  bullet(3, y);
+  textWrapped(g, kBody, x, y, w, 30,
+              "Tap \"Configure WiFi\", pick your home network, enter its password and "
+              "your 5-digit ZIP code, then tap Save.",
+              kBlack);
+
   g.fillRect(0, kScreenH - 54, kScreenW, 2, kBlack);
   char foot[128];
   snprintf(foot, sizeof foot,
