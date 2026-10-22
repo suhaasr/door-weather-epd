@@ -27,6 +27,15 @@ struct WeatherScreen {
   int batteryPercent;
   const char* reminders[kMaxReminders];  // reminders for the day shown
   int reminderCount;
+  int8_t hourlyRain[24];  // precipitation chance per local hour of the day shown
+  int rainFromHour;       // earlier hours are already past
+  char alert[40];         // NWS event, e.g. "Winter Storm Warning"; "" if none
+  char alertUntil[24];    // "until Sat 4 PM"
+  int alertMore;          // other alerts in effect that day
+  float uvMax;            // < 0 if unknown
+  float gustMph;          // < 0 if unknown
+  int aqi;                // US AQI, < 0 if unknown
+  int batteryDaysLeft;    // <= 0 if unknown
 };
 
 void drawWeatherScreen(Adafruit_GFX& g, const WeatherScreen& s);

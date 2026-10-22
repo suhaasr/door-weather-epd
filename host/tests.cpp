@@ -12,6 +12,7 @@
 #include "attire.h"
 #include "battery.h"
 #include "drift.h"
+#include "extras.h"
 #include "forecast.h"
 #include "schedule.h"
 #include "screen.h"
@@ -522,6 +523,109 @@ static void testReminderRendering() {
   CHECK(blackPixels(canvas, 0, 410, kScreenW, kScreenH) > kScreenW * 70 * 3 / 4);
 }
 
+static void testExtras() {
+  CHECK(estimateBatteryDaysLeft(100, 99, 10) == -1);  // not enough drop yet
+  CHECK(estimateBatteryDaysLeft(100, 90, 1) == -1);   // not enough time yet
+  CHECK(estimateBatteryDaysLeft(100, 90, 14) == 126);
+  CHECK(estimateBatteryDaysLeft(100, 4, 96) == 4);
+  char buf[32];
+  formatBatteryLeft(1, buf, sizeof buf);
+  CHECK(strcmp(buf, "~1 day") == 0);
+  formatBatteryLeft(9, buf, sizeof buf);
+  CHECK(strcmp(buf, "~9 days") == 0);
+  formatBatteryLeft(30, buf, sizeof buf);
+  CHECK(strcmp(buf, "~4 weeks") == 0);
+  formatBatteryLeft(126, buf, sizeof buf);
+  CHECK(strcmp(buf, "~4 months") == 0);
+
+  char url[400];
+  buildForecastUrl(url, sizeof url, 37.76f, -122.41f);
+  CHECK(strstr(url, "uv_index_max,wind_gusts_10m_max") != nullptr);
+  CHECK(strstr(url, "wind_speed_unit=mph") != nullptr);
+  std::string json = readFile("fixtures/open_meteo_sf.json");
+  Forecast f;
+  CHECK(parseOpenMeteo(json.data(), json.size(), f));
+  CHECK(f.day[0].uvMax < 0 && f.day[0].gustMaxMph < 0);  // fixture predates these fields
+  const char* uvJson =
+      "{\"daily\":{\"time\":[\"2026-10-21\",\"2026-10-22\"],"
+      "\"apparent_temperature_max\":[20,21],\"apparent_temperature_min\":[10,11],"
+      "\"precipitation_probability_max\":[0,0],\"uv_index_max\":[7.4,3],"
+      "\"wind_gusts_10m_max\":[34.5,12]},\"hourly\":{\"time\":[\"2026-10-21T00:00\"],"
+      "\"precipitation_probability\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"
+      "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}}";
+  CHECK(parseOpenMeteo(uvJson, strlen(uvJson), f));
+  CHECK(f.day[0].uvMax > 7.3f && f.day[0].uvMax < 7.5f && f.day[0].gustMaxMph > 34);
+
+  buildAirQualityUrl(url, sizeof url, 37.76f, -122.41f);
+  CHECK(strstr(url, "air-quality-api.open-meteo.com") && strstr(url, "us_aqi"));
+  json = readFile("fixtures/air_quality_sf.json");
+  strcpy(f.day[0].date, "2026-10-20");
+  CHECK(!parseAirQuality(json.data(), json.size(), f) && !f.aqiValid);  // other day
+  strcpy(f.day[0].date, "2026-10-21");
+  CHECK(parseAirQuality(json.data(), json.size(), f) && f.aqiValid);
+  CHECK(f.hourlyAqi[0] == 54);
+  CHECK(maxAqi(f, 0, 0) == 60);
+  CHECK(maxAqi(f, 5, 0) == -1);
+  CHECK(strcmp(aqiCategory(40), "Good") == 0);
+  CHECK(strcmp(aqiCategory(101), "Unhealthy for some") == 0);
+  CHECK(strcmp(aqiCategory(165), "Unhealthy") == 0);
+  CHECK(strcmp(aqiCategory(350), "Hazardous") == 0);
+
+  buildNwsAlertsUrl(url, sizeof url, 37.7631f, -122.4129f);
+  CHECK(strcmp(url, "https://api.weather.gov/alerts/active?point=37.7631,-122.4129") == 0);
+  json = readFile("fixtures/nws_alerts_ak.json");
+  CHECK(parseNwsAlerts(json.data(), json.size(), f));
+  CHECK(f.alertsValid && f.alertCount == kMaxAlerts);
+  CHECK(strcmp(f.alerts[0].event, "Blizzard Warning") == 0);  // Extreme; the cancelled one is skipped
+  CHECK(f.alerts[0].severity == 4 && f.alerts[1].severity == 3 && f.alerts[2].severity == 3);
+  CHECK(strcmp(f.alerts[1].event, "High Wind Watch") == 0);
+  CHECK(strcmp(f.alerts[0].ends, "2026-10-24T01:00") == 0);
+  int active = 0;
+  CHECK(alertFor(f, "2026-10-23", &active) == 0 && active == 3);
+  CHECK(alertFor(f, "2026-10-22", &active) == -1 && active == 0);
+  CHECK(alertFor(f, "2026-10-25", &active) == 1 && active == 1);  // only the watch lasts
+  formatAlertUntil(f.alerts[0], "2026-10-23", buf, sizeof buf);
+  CHECK(strcmp(buf, "until Sat 1 AM") == 0);
+  formatAlertUntil(f.alerts[0], "2026-10-24", buf, sizeof buf);
+  CHECK(strcmp(buf, "until 1 AM") == 0);
+  WeatherAlert a = {};
+  strcpy(a.ends, "2026-10-21T16:30");
+  formatAlertUntil(a, "2026-10-21", buf, sizeof buf);
+  CHECK(strcmp(buf, "until 4:30 PM") == 0);
+  const char* none = "{\"features\":[]}";
+  CHECK(parseNwsAlerts(none, strlen(none), f) && f.alertCount == 0);
+  CHECK(!parseNwsAlerts("oops", 4, f));
+  CHECK(weekdayOfIsoDate("2026-10-21") == 3);
+  CHECK(weekdayOfIsoDate("2028-02-29") == 2);
+  CHECK(weekdayOfIsoDate("2026-02-30") == -1);
+
+  // Everything at once still leaves the low-battery banner intact.
+  GFXcanvas1 canvas(kScreenW, kScreenH);
+  WeatherScreen s = {};
+  s.weekday = "Friday";
+  strcpy(s.date, "2026-10-23");
+  s.unit = 'F';
+  s.feelsLow = 20;
+  s.feelsHigh = 30;
+  s.batteryPercent = 3;
+  s.batteryDaysLeft = 4;
+  s.rain = {true, true, 90, 6, 22};
+  for (int h = 6; h < 23; ++h) s.hourlyRain[h] = 90;
+  strcpy(s.alert, "Blizzard Warning");
+  strcpy(s.alertUntil, "until Sat 1 AM");
+  s.alertMore = 2;
+  s.uvMax = 7;
+  s.gustMph = 45;
+  s.aqi = 160;
+  const char* items[] = {"Pack lunch", "Shovel the driveway"};
+  s.reminders[0] = items[0];
+  s.reminders[1] = items[1];
+  s.reminderCount = 2;
+  drawWeatherScreen(canvas, s);
+  CHECK(blackPixels(canvas, 0, 410, kScreenW, kScreenH) > kScreenW * 70 * 3 / 4);
+  CHECK(blackPixels(canvas, 12, 56, kScreenW - 12, 96) > 20000);  // alert strip
+}
+
 int main() {
   testBattery();
   testSchedule();
@@ -535,6 +639,7 @@ int main() {
   testReminders();
   testPortal();
   testReminderRendering();
+  testExtras();
   printf("%d checks, %d failures\n", checks, failures);
   return failures ? 1 : 0;
 }

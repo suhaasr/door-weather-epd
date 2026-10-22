@@ -1,0 +1,511 @@
+{
+ "@context": [
+  "https://geojson.org/geojson-ld/geojson-context.jsonld",
+  {
+   "@version": "1.1",
+   "wx": "https://api.weather.gov/ontology#",
+   "@vocab": "https://api.weather.gov/ontology#"
+  }
+ ],
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.d802c696c5a3c97d8a37060b2a852b6c22b0eade.001.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.d802c696c5a3c97d8a37060b2a852b6c22b0eade.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.d802c696c5a3c97d8a37060b2a852b6c22b0eade.001.1",
+    "areaDesc": "Northern Denali Borough; Eastern Alaska Range North of Trims Camp",
+    "geocode": {
+     "SAME": [
+      "002068",
+      "002240"
+     ],
+     "UGC": [
+      "AKZ847",
+      "AKZ849"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/AKZ847",
+     "https://api.weather.gov/zones/forecast/AKZ849"
+    ],
+    "references": [
+     {
+      "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.b8c68d04487567af2b041e0f1c751dbba00824a5.001.1",
+      "identifier": "urn:oid:2.49.0.1.840.0.b8c68d04487567af2b041e0f1c751dbba00824a5.001.1",
+      "sender": "w-nws.webmaster@noaa.gov",
+      "sent": "2026-10-21T03:42:00-08:00"
+     }
+    ],
+    "sent": "2026-10-21T15:26:00-08:00",
+    "effective": "2026-10-21T15:26:00-08:00",
+    "onset": "2026-10-23T19:00:00-08:00",
+    "expires": "2026-10-22T07:00:00-08:00",
+    "ends": "2026-10-25T01:00:00-08:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Possible",
+    "urgency": "Future",
+    "event": "High Wind Watch",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Fairbanks AK",
+    "headline": "High Wind Watch issued October 21 at 3:26PM AKDT until October 25 at 1:00AM AKDT by NWS Fairbanks AK",
+    "description": "* WHAT...Southeast winds 25 to 35 mph with gusts up to 75 mph\npossible.\n\n* WHERE...Eastern Alaska Range North of Trims Camp and Northern\nDenali Borough.\n\n* WHEN...From Friday evening through late Saturday night.\n\n* IMPACTS...Damaging winds could blow down trees and power lines.\nTravel could be difficult, especially for high profile vehicles.",
+    "instruction": "Monitor the latest forecasts and warnings for updates.",
+    "response": "Prepare",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "NPWAFG"
+     ],
+     "WMOidentifier": [
+      "WWAK73 PAFG 212326"
+     ],
+     "NWSheadline": [
+      "HIGH WIND WATCH REMAINS IN EFFECT FROM FRIDAY EVENING THROUGH LATE SATURDAY NIGHT"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "EAS-ORG": [
+      "WXR"
+     ],
+     "VTEC": [
+      "/O.CON.PAFG.HW.A.0015.261024T0300Z-261025T0900Z/"
+     ],
+     "eventEndingTime": [
+      "2026-10-25T01:00:00-08:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "HWA"
+     ],
+     "NationalWeatherService": [
+      "HWA"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.5b5e6906cbc690690dcda89e9e75555fe1f5cbf6.007.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.5b5e6906cbc690690dcda89e9e75555fe1f5cbf6.007.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.5b5e6906cbc690690dcda89e9e75555fe1f5cbf6.007.1",
+    "areaDesc": "St Lawrence Island",
+    "geocode": {
+     "SAME": [
+      "002180"
+     ],
+     "UGC": [
+      "AKZ827"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/AKZ827"
+    ],
+    "references": [
+     {
+      "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.bfb1c48d470786be158b54beede2aa2ca24f0545.006.1",
+      "identifier": "urn:oid:2.49.0.1.840.0.bfb1c48d470786be158b54beede2aa2ca24f0545.006.1",
+      "sender": "w-nws.webmaster@noaa.gov",
+      "sent": "2026-10-20T15:07:00-08:00"
+     }
+    ],
+    "sent": "2026-10-21T15:09:00-08:00",
+    "effective": "2026-10-21T15:09:00-08:00",
+    "onset": "2026-10-23T04:00:00-08:00",
+    "expires": "2026-10-22T16:00:00-08:00",
+    "ends": "2026-10-25T22:00:00-08:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Minor",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "High Surf Advisory",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Fairbanks AK",
+    "headline": "High Surf Advisory issued October 21 at 3:09PM AKDT until October 25 at 10:00PM AKDT by NWS Fairbanks AK",
+    "description": "* WHAT...Large breaking waves of 3 to 5 feet above the normal\nhigh tide line at Gambell and 2 to 3 feet above the normal\nhigh tide line at Savoonga.\n\n* WHERE...St Lawrence Island.\n\n* WHEN...From 4 AM Friday to 10 PM AKDT Sunday.\n\n* IMPACTS...Localized beach erosion may occur.\n\n* ADDITIONAL DETAILS...South to southeast winds increase\nThursday night gusting up to 75 mph.",
+    "instruction": "Precautions should be taken to protect property.",
+    "response": "Avoid",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "CFWAFG"
+     ],
+     "WMOidentifier": [
+      "WHAK49 PAFG 212309"
+     ],
+     "NWSheadline": [
+      "HIGH SURF ADVISORY REMAINS IN EFFECT FROM 4 AM FRIDAY TO 10 PM AKDT SUNDAY"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "VTEC": [
+      "/O.CON.PAFG.SU.Y.0009.261023T1200Z-261026T0600Z/"
+     ],
+     "eventEndingTime": [
+      "2026-10-25T22:00:00-08:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "SUY"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.d6757d5e5c6b7a96ad50c1bd82ff0d924f03bd30.001.2",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.d6757d5e5c6b7a96ad50c1bd82ff0d924f03bd30.001.2",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.d6757d5e5c6b7a96ad50c1bd82ff0d924f03bd30.001.2",
+    "areaDesc": "Shishmaref; Bering Strait Coast",
+    "geocode": {
+     "SAME": [
+      "002180"
+     ],
+     "UGC": [
+      "AKZ820",
+      "AKZ821"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/AKZ820",
+     "https://api.weather.gov/zones/forecast/AKZ821"
+    ],
+    "references": [],
+    "sent": "2026-10-21T15:06:00-08:00",
+    "effective": "2026-10-21T15:06:00-08:00",
+    "onset": "2026-10-23T04:00:00-08:00",
+    "expires": "2026-10-22T07:00:00-08:00",
+    "ends": "2026-10-24T01:00:00-08:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Extreme",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Blizzard Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Fairbanks AK",
+    "headline": "Blizzard Warning issued October 21 at 3:06PM AKDT until October 24 at 1:00AM AKDT by NWS Fairbanks AK",
+    "description": "* WHAT...Blizzard conditions expected. Total snow accumulations up to\n3 inches. Winds gusting as high as 60 mph.\n\n* WHERE...Bering Strait Coast and Shishmaref.\n\n* WHEN...From 4 AM Friday to 1 AM AKDT Saturday.\n\n* IMPACTS...Travel could be very difficult. Strong winds could result\nin power outages. Visibilities may drop below 1/4 mile due to\nfalling and blowing snow.\n\n* ADDITIONAL DETAILS...Snow will change to rain early Saturday\nmorning.",
+    "instruction": "Monitor the latest forecasts for updates on this situation.",
+    "response": "Prepare",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "WSWWCZ"
+     ],
+     "WMOidentifier": [
+      "WWAK42 PAFG 212306"
+     ],
+     "NWSheadline": [
+      "BLIZZARD WARNING IN EFFECT FROM 4 AM FRIDAY TO 1 AM AKDT SATURDAY"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "EAS-ORG": [
+      "WXR"
+     ],
+     "VTEC": [
+      "/O.NEW.PAFG.BZ.W.0034.261023T1200Z-261024T0900Z/"
+     ],
+     "eventEndingTime": [
+      "2026-10-24T01:00:00-08:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "BZW"
+     ],
+     "NationalWeatherService": [
+      "BZW"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.427ee6ad8fb63cb55bf60186ad087973c5ee708c.002.2",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.427ee6ad8fb63cb55bf60186ad087973c5ee708c.002.2",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.427ee6ad8fb63cb55bf60186ad087973c5ee708c.002.2",
+    "areaDesc": "Yukon Delta Coast",
+    "geocode": {
+     "SAME": [
+      "002158"
+     ],
+     "UGC": [
+      "AKZ825"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/AKZ825"
+    ],
+    "references": [],
+    "sent": "2026-10-21T14:50:00-08:00",
+    "effective": "2026-10-21T14:50:00-08:00",
+    "onset": "2026-10-23T04:00:00-08:00",
+    "expires": "2026-10-22T07:00:00-08:00",
+    "ends": "2026-10-24T16:00:00-08:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "High Wind Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Fairbanks AK",
+    "headline": "High Wind Warning issued October 21 at 2:50PM AKDT until October 24 at 4:00PM AKDT by NWS Fairbanks AK",
+    "description": "* WHAT...Southeast winds 30 to 40 mph with gusts up to 65 mph\nexpected.\n\n* WHERE...Yukon Delta Coast.\n\n* WHEN...From 4 AM Friday to 4 PM AKDT Saturday.\n\n* IMPACTS...High winds may move loose debris, damage property and\ncause power outages. Travel could be difficult.\n\n* ADDITIONAL DETAILS...A rain/snow mix is expected Thursday night\ninto early Friday morning. Combined with the strong winds, periods\nof reduced visibility due to blowing snow are possible Friday\nmorning and afternoon. Snow will change to completely to rain along\nthe coast as early as 12 PM.",
+    "instruction": "People are urged to secure loose objects that could be blown around\nor damaged by the wind.",
+    "response": "Prepare",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "NPWWCZ"
+     ],
+     "WMOidentifier": [
+      "WWAK72 PAFG 212250"
+     ],
+     "NWSheadline": [
+      "HIGH WIND WARNING IN EFFECT FROM 4 AM FRIDAY TO 4 PM AKDT SATURDAY"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "EAS-ORG": [
+      "WXR"
+     ],
+     "VTEC": [
+      "/O.NEW.PAFG.HW.W.0017.261023T1200Z-261025T0000Z/"
+     ],
+     "eventEndingTime": [
+      "2026-10-24T16:00:00-08:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "HWW"
+     ],
+     "NationalWeatherService": [
+      "HWW"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.95f9f7c8a3c6a53a9fc3c8b7b8838553c67d666a.002.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.95f9f7c8a3c6a53a9fc3c8b7b8838553c67d666a.002.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.95f9f7c8a3c6a53a9fc3c8b7b8838553c67d666a.002.1",
+    "areaDesc": "Northern Bristol Bay Coast",
+    "geocode": {
+     "SAME": [
+      "002070"
+     ],
+     "UGC": [
+      "AKZ764"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/AKZ764"
+    ],
+    "references": [
+     {
+      "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.8a7d2a52c9de21801e1c57885418fd46961514ac.001.1",
+      "identifier": "urn:oid:2.49.0.1.840.0.8a7d2a52c9de21801e1c57885418fd46961514ac.001.1",
+      "sender": "w-nws.webmaster@noaa.gov",
+      "sent": "2026-10-21T10:47:00-08:00"
+     }
+    ],
+    "sent": "2026-10-21T13:43:00-08:00",
+    "effective": "2026-10-21T13:43:00-08:00",
+    "onset": "2026-10-23T10:00:00-08:00",
+    "expires": "2026-10-22T06:15:00-08:00",
+    "ends": "2026-10-24T07:00:00-08:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Minor",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "High Surf Advisory",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Anchorage AK",
+    "headline": "High Surf Advisory issued October 21 at 1:43PM AKDT until October 24 at 7:00AM AKDT by NWS Anchorage AK",
+    "description": "* WHAT...Water levels most likely around 1.0 to 2.0 feet above\nthe normal highest tide line, with highest water levels\nexpected near Togiak.\n\n* WHERE...Northern Bristol Bay Coast.\n\n* WHEN...10 AM Friday to 7AM Saturday\n\n* IMPACTS...Nuisance flooding of low lying areas. Coastal\nerosion is possible.\n\n* ADDITIONAL DETAILS...A Bering front arrives to the Southwest\nAlaska coast Friday morning, bringing a prolonged period of\nstrong southerly winds towards the coast. These winds will\nresult in elevated water levels and high surf. This period of\nwinds will coincide with two tidal cycles and push water\nlevels 1.0 to 2.0 feet above the normal highest tide line.\nWater levels are expected to quickly drop off Saturday morning\nas winds decrease, alleviating coastal concerns.",
+    "instruction": "Precautions should be taken to protect property.",
+    "response": "Avoid",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "CFWALU"
+     ],
+     "WMOidentifier": [
+      "WHAK42 PAFC 212143"
+     ],
+     "NWSheadline": [
+      "HIGH SURF ADVISORY REMAINS IN EFFECT FROM 10 AM FRIDAY TO 7 AM AKDT SATURDAY"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "VTEC": [
+      "/O.CON.PAFC.SU.Y.0008.261023T1800Z-261024T1500Z/"
+     ],
+     "eventEndingTime": [
+      "2026-10-24T07:00:00-08:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "SUY"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.d6757d5e5c6b7a96ad50c1bd82ff0d924f03bd30.001.2",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.d6757d5e5c6b7a96ad50c1bd82ff0d924f03bd30.001.2",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.d6757d5e5c6b7a96ad50c1bd82ff0d924f03bd30.001.2",
+    "areaDesc": "Shishmaref; Bering Strait Coast",
+    "geocode": {
+     "SAME": [
+      "002180"
+     ],
+     "UGC": [
+      "AKZ820",
+      "AKZ821"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/AKZ820",
+     "https://api.weather.gov/zones/forecast/AKZ821"
+    ],
+    "references": [],
+    "sent": "2026-10-21T15:06:00-08:00",
+    "effective": "2026-10-21T15:06:00-08:00",
+    "onset": "2026-10-23T04:00:00-08:00",
+    "expires": "2026-10-22T07:00:00-08:00",
+    "ends": "2026-10-24T01:00:00-08:00",
+    "status": "Actual",
+    "messageType": "Cancel",
+    "category": "Met",
+    "severity": "Extreme",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Tornado Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Fairbanks AK",
+    "headline": "Blizzard Warning issued October 21 at 3:06PM AKDT until October 24 at 1:00AM AKDT by NWS Fairbanks AK",
+    "description": "* WHAT...Blizzard conditions expected. Total snow accumulations up to\n3 inches. Winds gusting as high as 60 mph.\n\n* WHERE...Bering Strait Coast and Shishmaref.\n\n* WHEN...From 4 AM Friday to 1 AM AKDT Saturday.\n\n* IMPACTS...Travel could be very difficult. Strong winds could result\nin power outages. Visibilities may drop below 1/4 mile due to\nfalling and blowing snow.\n\n* ADDITIONAL DETAILS...Snow will change to rain early Saturday\nmorning.",
+    "instruction": "Monitor the latest forecasts for updates on this situation.",
+    "response": "Prepare",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "WSWWCZ"
+     ],
+     "WMOidentifier": [
+      "WWAK42 PAFG 212306"
+     ],
+     "NWSheadline": [
+      "BLIZZARD WARNING IN EFFECT FROM 4 AM FRIDAY TO 1 AM AKDT SATURDAY"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "EAS-ORG": [
+      "WXR"
+     ],
+     "VTEC": [
+      "/O.NEW.PAFG.BZ.W.0034.261023T1200Z-261024T0900Z/"
+     ],
+     "eventEndingTime": [
+      "2026-10-24T01:00:00-08:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "BZW"
+     ],
+     "NationalWeatherService": [
+      "BZW"
+     ]
+    }
+   }
+  }
+ ],
+ "title": "Current watches, warnings, and advisories for Alaska",
+ "updated": "2026-10-22T00:31:22+00:00"
+}

@@ -11,9 +11,9 @@ void buildForecastUrl(char* buf, size_t len, float lat, float lon) {
   snprintf(buf, len,
            "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f"
            "&daily=apparent_temperature_max,apparent_temperature_min,"
-           "precipitation_probability_max"
+           "precipitation_probability_max,uv_index_max,wind_gusts_10m_max"
            "&hourly=precipitation_probability,weather_code"
-           "&timezone=auto&forecast_days=%d",
+           "&wind_speed_unit=mph&timezone=auto&forecast_days=%d",
            lat, lon, kForecastDays);
 }
 
@@ -26,6 +26,8 @@ bool parseOpenMeteo(const char* json, size_t len, Forecast& out) {
   JsonArrayConst highs = doc["daily"]["apparent_temperature_max"];
   JsonArrayConst lows = doc["daily"]["apparent_temperature_min"];
   JsonArrayConst pmax = doc["daily"]["precipitation_probability_max"];
+  JsonArrayConst uv = doc["daily"]["uv_index_max"];
+  JsonArrayConst gusts = doc["daily"]["wind_gusts_10m_max"];
   JsonArrayConst hours = doc["hourly"]["time"];
   JsonArrayConst hprecip = doc["hourly"]["precipitation_probability"];
   JsonArrayConst hcode = doc["hourly"]["weather_code"];
@@ -44,6 +46,8 @@ bool parseOpenMeteo(const char* json, size_t len, Forecast& out) {
     day.feelsHighC = highs[d].as<float>();
     day.feelsLowC = lows[d].as<float>();
     day.precipMaxPct = static_cast<int8_t>(pmax[d] | 0);
+    day.uvMax = uv[d] | -1.0f;
+    day.gustMaxMph = gusts[d] | -1.0f;
   }
   for (int h = 0; h < kForecastHours; ++h) {
     out.hourlyPrecipPct[h] = static_cast<int8_t>(hprecip[h] | 0);

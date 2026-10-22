@@ -17,4 +17,11 @@ int smoothBatteryPercent(int previous, int measured);
 
 BatteryLevel batteryLevel(int percent);
 
+// Days until empty, extrapolated from the drop since the last charge
+// (anchorPct, elapsedDays ago). -1 until there's enough history.
+int estimateBatteryDaysLeft(int anchorPct, int pct, double elapsedDays);
+
+// "~5 days", "~3 weeks", "~4 months".
+void formatBatteryLeft(int days, char* buf, int len);
+
 }  // namespace door

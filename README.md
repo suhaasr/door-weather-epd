@@ -2,9 +2,13 @@
 
 A battery-powered 7.5" e-ink display for the front door. Each morning it shows:
 
-- whether it's likely to rain today (any hour ≥ 10%) with a big **BRING AN UMBRELLA** banner,
+- whether it's likely to rain today (any hour ≥ 10%) with a big **BRING AN UMBRELLA** banner and an
+  hour-by-hour bar chart (6 AM–10 PM), so you can see if it'll rain on the way home,
+- active National Weather Service alerts (winter storm, heat advisory, high wind, …) as a black strip on top,
+- "Wear sunscreen" (UV ≥ 6), "Windy" (gusts ≥ 30 mph) and air-quality (US AQI > 100, e.g. wildfire smoke) notes,
 - today's "feels like" low and high, each with what to wear (e.g. "Chilly: light jacket & long pants"),
-- the weekday and date (`YYYY-MM-DD`), update time and battery level, so you can tell it refreshed today.
+- the weekday and date (`YYYY-MM-DD`), update time and battery level, so you can tell it refreshed today,
+- an estimate of the days/weeks of battery left, based on how fast it has drained since the last charge.
 
 It wakes once an hour from **3 AM to 10 AM** (8 refreshes/day) and deep-sleeps the rest of the time.
 Below 5% battery a black recharge banner appears at the bottom; at 1% the entire screen becomes
@@ -17,6 +21,10 @@ Below 5% battery a black recharge banner appears at the bottom; at 1% the entire
 | Wi-Fi setup | Offline (stale data) | Set up in the evening (shows tomorrow) |
 |---|---|---|
 | ![](docs/img/setup.png) | ![](docs/img/offline.png) | ![](docs/img/evening_setup.png) |
+
+| Weather alert + wind | Sunscreen + air quality | Everything at once (compact layout) |
+|---|---|---|
+| ![](docs/img/alert.png) | ![](docs/img/air_quality.png) | ![](docs/img/everything_low_battery.png) |
 
 | Reminders | Reminders + rain + low battery | Reminders page (PIN) |
 |---|---|---|
@@ -59,7 +67,7 @@ All pins are in [`src/config.h`](src/config.h). The FireBeetle's USB-C port char
 ### Battery life
 
 Rough budget with a 2000 mAh cell: each refresh is ~5 s of Wi-Fi (~100 mA) plus a ~4 s e-ink update,
-≈ 0.25 mAh; 8 per day ≈ 2 mAh/day, plus ≈ 0.5 mAh/day of deep sleep. That's on the order of a year,
+≈ 0.25 mAh (the alerts and air-quality requests add ~1–2 s); 8 per day ≈ 2–3 mAh/day, plus ≈ 0.5 mAh/day of deep sleep. That's on the order of a year,
 so the 2-month goal has plenty of headroom; in practice LiPo self-discharge and the board's
 power LED matter more. To get the lowest sleep current, cut the FireBeetle's low-power jumper
 (see DFRobot's wiki) and prefer the DESPI-C02 adapter, which draws almost nothing when the panel is
@@ -122,7 +130,7 @@ Tap **Done** to redraw the display; the page also closes after 10 idle minutes.
   cable could read it. Mount it indoors, or put it on a guest/IoT network.
 - The reminders page is plain HTTP on your home network and only runs while you have it open. It never
   shows or accepts the Wi-Fi password; access needs the PIN on the screen.
-- Outside setup and the reminders page, the device makes only outbound requests (Open-Meteo, Zippopotam.us, NTP) and turns Wi-Fi off between refreshes.
+- Outside setup and the reminders page, the device makes only outbound requests (Open-Meteo forecast and air quality, api.weather.gov alerts, Zippopotam.us, NTP) and turns Wi-Fi off between refreshes.
   HTTPS certificates are not verified: a man-in-the-middle could show fake weather, but no credentials or
   personal data are sent.
 
@@ -135,6 +143,14 @@ Tap **Done** to redraw the display; the page also closes after 10 idle minutes.
   The subtitle shows the peak chance and the time span.
 - **Feels like:** Open-Meteo's daily apparent-temperature min/max. Clothing advice uses 7 tiers: Freezing < 32°F,
   Cold < 45, Chilly < 55, Cool < 65, Mild < 75, Warm < 85, Hot.
+- **Alerts:** from `api.weather.gov` for your ZIP's coordinates; the most severe alert in effect that day is
+  shown, with "+N more alerts" if there are others. If the alert request fails, the last known alerts are kept.
+- **Extras:** UV index and wind gusts come from the same Open-Meteo forecast; AQI is the highest US AQI for the
+  rest of the day from Open-Meteo's free air-quality API. Thresholds are in `lib/doorcore/src/extras.h`.
+- **Battery estimate:** after at least 2 days and a 3% drop since the last charge, the footer shows e.g.
+  "Battery ~2 months left" (and the low-battery banner shows days). Charging resets the estimate.
+- **Crowded days:** with an alert, conditions and reminders all showing, the rain banner and temperature
+  panels switch to a compact layout so everything fits.
 - **After 6 PM** (e.g. when you first set it up in the evening) it shows tomorrow's forecast.
 - **Battery:** 5% and above is normal; 2–4% adds the bottom banner; 0–1% shows the full-screen warning
   and stops using Wi-Fi, re-checking every 30 minutes so it recovers on its own after a charge.

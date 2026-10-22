@@ -13,6 +13,19 @@ struct DayForecast {
   float feelsHighC;     // apparent_temperature_max
   float feelsLowC;      // apparent_temperature_min
   int8_t precipMaxPct;  // precipitation_probability_max
+  float uvMax;          // uv_index_max, < 0 if missing
+  float gustMaxMph;     // wind_gusts_10m_max, < 0 if missing
+};
+
+constexpr int kMaxAlerts = 3;
+
+// An active National Weather Service alert. Times are the issuing office's
+// local time ("YYYY-MM-DDTHH:MM"), which matches the forecast location.
+struct WeatherAlert {
+  char event[40];  // "Winter Storm Warning"
+  char starts[17];
+  char ends[17];
+  int8_t severity;  // 0 unknown, 1 minor ... 4 extreme
 };
 
 // Plain-old-data so it can live in RTC memory across deep sleep.
@@ -23,6 +36,11 @@ struct Forecast {
   DayForecast day[kForecastDays];
   int8_t hourlyPrecipPct[kForecastHours];  // index = day * 24 + hour
   uint8_t hourlyWeatherCode[kForecastHours];
+  bool aqiValid;
+  int16_t hourlyAqi[kForecastHours];  // US AQI, -1 if missing
+  bool alertsValid;
+  int8_t alertCount;
+  WeatherAlert alerts[kMaxAlerts];  // most severe first
 };
 
 struct RainOutlook {

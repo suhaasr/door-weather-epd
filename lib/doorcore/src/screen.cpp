@@ -7,11 +7,13 @@
 #include <Fonts/FreeSansBold18pt7b.h>
 #include <Fonts/FreeSansBold24pt7b.h>
 #include <Fonts/FreeSansBold9pt7b.h>
+#include <ctype.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "battery.h"
+#include "extras.h"
 #include "icons.h"
 #include "fonts/DejaVuSansBold44pt7b.h"
 
@@ -137,31 +139,143 @@ void rainSentence(const RainOutlook& r, bool tomorrow, char* buf, int len) {
   }
 }
 
-void drawRain(Adafruit_GFX& g, const WeatherScreen& s) {
-  constexpr int top = 56, h = 118;
+// Bar per hour, 6 AM to 10 PM; solid bars are at or above the rain threshold.
+void drawRainBars(Adafruit_GFX& g, const WeatherScreen& s, int x0, int x1, int base, int maxH,
+                  int labelBaseline, uint16_t c) {
+  constexpr int kFirst = 6, kLast = 22;
+  const float cw = (x1 - x0) / static_cast<float>(kLast - kFirst + 1);
+  g.drawFastHLine(x0, base, x1 - x0, c);
+  for (int h = kFirst; h <= kLast; ++h) {
+    const int cx = x0 + static_cast<int>((h - kFirst) * cw);
+    const int w = static_cast<int>(cw) - 6;
+    const int p = s.hourlyRain[h];
+    if (h >= s.rainFromHour && p > 0) {
+      const int bh = std::max(3, p * maxH / 100);
+      if (p >= kRainThresholdPercent) {
+        g.fillRect(cx + 3, base - bh, w, bh, c);
+      } else {
+        g.drawRect(cx + 3, base - bh, w, bh, c);
+      }
+    }
+    if ((h - kFirst) % 3 == 0) {
+      char label[12];
+      formatHour(h, label, sizeof label);
+      textCentered(g, kSmall, cx + static_cast<int>(cw / 2), labelBaseline, label, c);
+    }
+  }
+}
+
+int rainHeight(const WeatherScreen& s, bool compact) {
+  if (s.rain.likely) return compact ? 98 : 128;
+  return compact ? 64 : 118;
+}
+
+void drawRain(Adafruit_GFX& g, const WeatherScreen& s, int top, bool compact) {
+  const int h = rainHeight(s, compact);
   char sub[96];
   if (s.rain.likely) {
-    g.fillRoundRect(12, top, kScreenW - 24, h, 14, kBlack);
-    drawUmbrella(g, 88, top + 52, 44, kWhite, kBlack);
-    text(g, kHeadline, 164, top + 56, "BRING AN UMBRELLA", kWhite);
     rainSentence(s.rain, s.tomorrow, sub, sizeof sub);
-    const GFXfont* subFont = textWidth(kBody, sub) <= kScreenW - 24 - 166 ? kBody : kSmall;
-    text(g, subFont, 166, top + 96, sub, kWhite);
+    g.fillRoundRect(12, top, kScreenW - 24, h, 14, kBlack);
+    if (compact) {
+      drawUmbrella(g, 64, top + 46, 32, kWhite, kBlack);
+      text(g, kTitle, 120, top + 34, "BRING AN UMBRELLA", kWhite);
+      const int room = kScreenW - 30 - (120 + textWidth(kTitle, "BRING AN UMBRELLA") + 20);
+      if (textWidth(kSmall, sub) > room) snprintf(sub, sizeof sub, "Up to %d%%", s.rain.maxPct);
+      textRight(g, kSmall, kScreenW - 30, top + 32, sub, kWhite);
+      drawRainBars(g, s, 120, kScreenW - 30, top + 66, 18, top + 87, kWhite);
+    } else {
+      drawUmbrella(g, 88, top + 58, 44, kWhite, kBlack);
+      text(g, kHeadline, 164, top + 46, "BRING AN UMBRELLA", kWhite);
+      const GFXfont* subFont = textWidth(kBody, sub) <= kScreenW - 24 - 166 ? kBody : kSmall;
+      text(g, subFont, 166, top + 74, sub, kWhite);
+      drawRainBars(g, s, 166, kScreenW - 30, top + 100, 20, top + 119, kWhite);
+    }
+    return;
+  }
+  g.drawRoundRect(12, top, kScreenW - 24, h, 14, kBlack);
+  g.drawRoundRect(13, top + 1, kScreenW - 26, h - 2, 13, kBlack);
+  snprintf(sub, sizeof sub, "Chance of rain stays below %d%% (max %d%%)", kRainThresholdPercent,
+           s.rain.maxPct);
+  if (compact) {
+    drawSun(g, 50, top + h / 2, 18, kBlack);
+    text(g, kTitle, 92, top + 31, "No umbrella needed", kBlack);
+    text(g, kSmall, 93, top + 53, sub, kBlack);
   } else {
-    g.drawRoundRect(12, top, kScreenW - 24, h, 14, kBlack);
-    g.drawRoundRect(13, top + 1, kScreenW - 26, h - 2, 13, kBlack);
     drawSun(g, 88, top + h / 2, 34, kBlack);
     text(g, kTitle, 164, top + 54, "No umbrella needed", kBlack);
-    snprintf(sub, sizeof sub, "Chance of rain stays below %d%% (max %d%%)",
-             kRainThresholdPercent, s.rain.maxPct);
     text(g, kBody, 166, top + 92, sub, kBlack);
   }
 }
 
-void drawTemperature(Adafruit_GFX& g, int x, int baseline, float value, char unit) {
+void drawAlertStrip(Adafruit_GFX& g, const WeatherScreen& s, int top, int h) {
+  g.fillRoundRect(12, top, kScreenW - 24, h, 10, kBlack);
+  const int cy = top + h / 2;
+  g.fillTriangle(44, cy - 16, 25, cy + 15, 63, cy + 15, kWhite);
+  g.fillRect(42, cy - 7, 5, 13, kBlack);
+  g.fillRect(42, cy + 9, 5, 4, kBlack);
+
+  char event[40];
+  size_t i = 0;
+  for (; s.alert[i] && i + 1 < sizeof event; ++i) event[i] = toupper(s.alert[i]);
+  event[i] = 0;
+  char more[24] = "";
+  if (s.alertMore > 0) {
+    snprintf(more, sizeof more, "+%d more alert%s", s.alertMore, s.alertMore == 1 ? "" : "s");
+  }
+  const int x0 = 78, right = kScreenW - 30;
+  const int moreW = *more ? textWidth(kSmall, more) + 20 : 0;
+  const GFXfont* f = kTitle;
+  if (x0 + textWidth(f, event) + 14 + textWidth(kBody, s.alertUntil) + moreW > right) f = kBodyBold;
+  text(g, f, x0, cy + (f == kTitle ? 12 : 9), event, kWhite);
+  text(g, kBody, x0 + textWidth(f, event) + 14, cy + 9, s.alertUntil, kWhite);
+  if (*more) textRight(g, kSmall, right, cy + 7, more, kWhite);
+}
+
+int conditionItems(const WeatherScreen& s, char items[3][48]) {
+  int n = 0;
+  if (s.uvMax >= kSunscreenUvIndex) {
+    snprintf(items[n++], 48, "Wear sunscreen (UV %d)", static_cast<int>(lroundf(s.uvMax)));
+  }
+  if (s.gustMph >= kWindyGustMph) {
+    if (s.unit == 'C') {
+      snprintf(items[n++], 48, "Windy: gusts %d km/h", static_cast<int>(lroundf(s.gustMph * 1.609f)));
+    } else {
+      snprintf(items[n++], 48, "Windy: gusts %d mph", static_cast<int>(lroundf(s.gustMph)));
+    }
+  }
+  if (s.aqi >= kAqiAlert) {
+    snprintf(items[n++], 48, "Air quality: %s (%d)", aqiCategory(s.aqi), s.aqi);
+  }
+  return n;
+}
+
+void drawConditions(Adafruit_GFX& g, char items[3][48], int n, int top, int h) {
+  constexpr int kPad = 14, kGap = 10;
+  const GFXfont* fonts[] = {kBodyBold, kBody, kSmallBold};
+  const GFXfont* f = kSmallBold;
+  for (const GFXfont* cand : fonts) {
+    int total = 0;
+    for (int i = 0; i < n; ++i) total += textWidth(cand, items[i]) + 2 * kPad + (i ? kGap : 0);
+    if (total <= kScreenW - 24) {
+      f = cand;
+      break;
+    }
+  }
+  int x = 12;
+  for (int i = 0; i < n; ++i) {
+    const int w = textWidth(f, items[i]) + 2 * kPad;
+    g.drawRoundRect(x, top, w, h, h / 2, kBlack);
+    g.drawRoundRect(x + 1, top + 1, w - 2, h - 2, h / 2 - 1, kBlack);
+    text(g, f, x + kPad, top + h / 2 + (f == kSmallBold ? 6 : 8), items[i], kBlack);
+    x += w + kGap;
+  }
+}
+
+void drawTemperature(Adafruit_GFX& g, int x, int baseline, float value, char unit,
+                     bool small = false) {
   char num[8];
   snprintf(num, sizeof num, "%d", static_cast<int>(lroundf(value)));
-  const bool fits = strlen(num) <= 2;
+  const bool fits = !small && strlen(num) <= 2;
   const GFXfont* f = fits ? kHuge : kHeadline;
   text(g, f, x, baseline, num, kBlack);
   int w = textWidth(f, num);
@@ -174,24 +288,46 @@ void drawTemperature(Adafruit_GFX& g, int x, int baseline, float value, char uni
 
 void drawAttirePanel(Adafruit_GFX& g, int x0, int top, int bottom, const char* label,
                      float temp, char unit, Tier tier) {
-  // Content is ~165 px tall; centre it when reminders/battery leave more room.
-  const int y = top + std::max(0, (bottom - top - 175) / 2);
+  const int h = bottom - top;
   const int tx = x0 + 22;
   const int rx = x0 + 215;
-  text(g, kBodyBold, tx, y + 30, label, kBlack);
-  drawTemperature(g, tx, y + 112, temp, unit);
-  text(g, kTitle, rx, y + 76, tierName(tier), kBlack);
-  textWrapped(g, kBody, rx, y + 106, x0 + 400 - rx - 14, 27, tierAdvice(tier), kBlack);
+  const int wrapW = x0 + 400 - rx - 14;
+  if (h >= 150) {
+    // Content is ~165 px tall; centre it when there's more room.
+    const int y = top + std::max(0, (h - 175) / 2);
+    text(g, kBodyBold, tx, y + 30, label, kBlack);
+    drawTemperature(g, tx, y + 112, temp, unit);
+    text(g, kTitle, rx, y + 76, tierName(tier), kBlack);
+    textWrapped(g, kBody, rx, y + 106, wrapW, 27, tierAdvice(tier), kBlack);
+  } else if (h >= 112) {
+    const int y = top + (h - 112) / 2;
+    text(g, kBodyBold, tx, y + 24, label, kBlack);
+    drawTemperature(g, tx, y + 94, temp, unit);
+    text(g, kTitle, rx, y + 52, tierName(tier), kBlack);
+    textWrapped(g, kBody, rx, y + 80, wrapW, 26, tierAdvice(tier), kBlack);
+  } else {
+    const int y = top + std::max(0, (h - 88) / 2);
+    text(g, kSmallBold, tx, y + 18, label, kBlack);
+    drawTemperature(g, tx, y + 64, temp, unit, true);
+    text(g, kBodyBold, rx, y + 40, tierName(tier), kBlack);
+    textWrapped(g, kSmall, rx, y + 62, wrapW, 20, tierAdvice(tier), kBlack);
+  }
 }
 
-void drawLowBatteryBanner(Adafruit_GFX& g, int top, int pct) {
+void drawLowBatteryBanner(Adafruit_GFX& g, int top, int pct, int daysLeft) {
   g.fillRect(0, top, kScreenW, kScreenH - top, kBlack);
   const int h = kScreenH - top;
   drawBatteryIcon(g, 26, top + h / 2 - 16, 60, 32, pct, kWhite);
   char msg[64];
   snprintf(msg, sizeof msg, "BATTERY LOW (%d%%)", pct);
   text(g, kTitle, 112, top + 30, msg, kWhite);
-  text(g, kBody, 114, top + 58, "Please recharge with a USB-C cable soon.", kWhite);
+  char sub[80] = "Please recharge with a USB-C cable soon.";
+  if (daysLeft > 0) {
+    char left[24];
+    formatBatteryLeft(daysLeft, left, sizeof left);
+    snprintf(sub, sizeof sub, "Please recharge with a USB-C cable soon (%s left).", left);
+  }
+  text(g, kBody, 114, top + 58, sub, kWhite);
 }
 
 }  // namespace
@@ -249,25 +385,54 @@ void drawReminderStrip(Adafruit_GFX& g, int top, int h, const char* const* items
 void drawWeatherScreen(Adafruit_GFX& g, const WeatherScreen& s) {
   g.fillScreen(kWhite);
   drawHeader(g, s);
-  drawRain(g, s);
 
   const bool low = batteryLevel(s.batteryPercent) != BatteryLevel::Ok;
-  int top = 184;
-  if (s.reminderCount > 0) {
-    drawReminderStrip(g, top, 54, s.reminders, s.reminderCount);
-    top += 60;
-  }
   const int bottom = low ? 408 : 444;
+  char items[3][48];
+  const int nItems = conditionItems(s, items);
+  const int alertH = s.alert[0] ? 44 : 0;
+  const int chipsH = nItems ? 36 : 0;
+  int remindersH = s.reminderCount > 0 ? 54 : 0;
+  auto panelRoom = [&](int rainH) {
+    int used = 56 + (alertH ? alertH + 8 : 0) + rainH + 10 + (chipsH ? chipsH + 8 : 0) +
+               (remindersH ? remindersH + 6 : 0);
+    return bottom - used;
+  };
+  // Shrink the rain banner (and reminders) when everything wouldn't fit.
+  const bool compact = panelRoom(rainHeight(s, false)) < 150;
+  if (compact && remindersH) remindersH = 48;
+
+  int top = 56;
+  if (alertH) {
+    drawAlertStrip(g, s, top - 2, alertH);
+    top += alertH + 8 - 2;
+  }
+  drawRain(g, s, top, compact);
+  top += rainHeight(s, compact) + 10;
+  if (chipsH) {
+    drawConditions(g, items, nItems, top, chipsH);
+    top += chipsH + 8;
+  }
+  if (remindersH) {
+    drawReminderStrip(g, top, remindersH, s.reminders, s.reminderCount);
+    top += remindersH + 6;
+  }
   drawAttirePanel(g, 0, top, bottom, "FEELS LIKE LOW", s.feelsLow, s.unit, s.lowTier);
   g.fillRect(kScreenW / 2 - 1, top + 12, 2, bottom - top - 24, kBlack);
   drawAttirePanel(g, kScreenW / 2, top, bottom, "FEELS LIKE HIGH", s.feelsHigh, s.unit,
                   s.highTier);
 
   if (low) {
-    drawLowBatteryBanner(g, bottom, s.batteryPercent);
+    drawLowBatteryBanner(g, bottom, s.batteryPercent, s.batteryDaysLeft);
   } else {
     g.fillRect(0, bottom, kScreenW, 2, kBlack);
     text(g, kSmall, 16, kScreenH - 12, s.place, kBlack);
+    if (s.batteryDaysLeft > 0) {
+      char left[24], msg[48];
+      formatBatteryLeft(s.batteryDaysLeft, left, sizeof left);
+      snprintf(msg, sizeof msg, "Battery %s left", left);
+      textCentered(g, kSmall, kScreenW / 2, kScreenH - 12, msg, kBlack);
+    }
     char next[40];
     snprintf(next, sizeof next, "Next update %s", s.nextUpdateAt);
     textRight(g, kSmall, kScreenW - 16, kScreenH - 12, next, kBlack);

@@ -1,5 +1,7 @@
 #include "battery.h"
 
+#include <stdio.h>
+
 namespace door {
 
 namespace {
@@ -41,6 +43,25 @@ BatteryLevel batteryLevel(int percent) {
   if (percent <= kCriticalBatteryPercent) return BatteryLevel::Critical;
   if (percent < kLowBatteryPercent) return BatteryLevel::Low;
   return BatteryLevel::Ok;
+}
+
+int estimateBatteryDaysLeft(int anchorPct, int pct, double elapsedDays) {
+  const int drop = anchorPct - pct;
+  if (elapsedDays < 2 || drop < 3 || pct < 0) return -1;
+  double days = pct * elapsedDays / drop;
+  return days > 999 ? 999 : static_cast<int>(days);
+}
+
+void formatBatteryLeft(int days, char* buf, int len) {
+  if (days < 0) {
+    snprintf(buf, len, "%s", "");
+  } else if (days < 14) {
+    snprintf(buf, len, "~%d day%s", days, days == 1 ? "" : "s");
+  } else if (days < 60) {
+    snprintf(buf, len, "~%d weeks", (days + 3) / 7);
+  } else {
+    snprintf(buf, len, "~%d months", (days + 15) / 30);
+  }
 }
 
 }  // namespace door

@@ -22,6 +22,7 @@
 #include "battery.h"
 #include "config.h"
 #include "drift.h"
+#include "extras.h"
 #include "forecast.h"
 #include "portal.h"
 #include "reminders.h"
@@ -37,7 +38,7 @@ namespace {
 GxEPD2_BW<DOOR_EPD_DRIVER, DOOR_EPD_DRIVER::HEIGHT> display(
     DOOR_EPD_DRIVER(kPinEpdCs, kPinEpdDc, kPinEpdRst, kPinEpdBusy));
 
-constexpr uint32_t kRtcMagic = 0xD00D0003;
+constexpr uint32_t kRtcMagic = 0xD00D0004;
 constexpr uint32_t kWifiTimeoutMs = 15000;
 constexpr uint32_t kNtpTimeoutMs = 10000;
 constexpr time_t kMinValidEpoch = 1700000000;  // Nov 2023
@@ -183,6 +184,57 @@ bool fetchForecast(const Settings& s, Forecast& out) {
     delay(1000);
   }
   return false;
+}
+
+// Optional extras: failures leave the forecast untouched.
+bool fetchAirQuality(const Settings& s, Forecast& f) {
+  char url[200];
+  buildAirQualityUrl(url, sizeof url, s.lat, s.lon);
+  String body;
+  return httpGet(url, body) && parseAirQuality(body.c_str(), body.length(), f);
+}
+
+bool fetchAlerts(const Settings& s, Forecast& f) {
+  char url[96];
+  buildNwsAlertsUrl(url, sizeof url, s.lat, s.lon);
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  http.setTimeout(10000);
+  http.useHTTP10(true);  // no chunked encoding, so the body can be parsed as a stream
+  if (!http.begin(client, url)) return false;
+  http.setUserAgent(kNwsUserAgent);
+  http.addHeader("Accept", "application/geo+json");
+  bool ok = false;
+  if (http.GET() == HTTP_CODE_OK) {
+    JsonDocument filter;
+    nwsAlertsFilter(filter);
+    JsonDocument doc;
+    if (!deserializeJson(doc, http.getStream(), DeserializationOption::Filter(filter))) {
+      ok = nwsAlertsFromDoc(doc, f);
+    }
+  }
+  http.end();
+  return ok;
+}
+
+// Days of battery left, from the drop since the last charge. The anchor lives
+// in flash (RTC memory is lost on RESET) and is only rewritten after a charge.
+int batteryDaysLeft(int pct, time_t now) {
+  if (now < kMinValidEpoch) return -1;
+  Preferences p;
+  p.begin("door", false);
+  const int64_t t0 = p.getLong64("batT", 0);
+  const int p0 = p.getInt("batP", -1);
+  int days = -1;
+  if (p0 < 0 || t0 <= 0 || now < t0 || pct >= p0 + 5) {
+    p.putLong64("batT", now);
+    p.putInt("batP", pct);
+  } else {
+    days = estimateBatteryDaysLeft(p0, pct, difftime(now, static_cast<time_t>(t0)) / 86400.0);
+  }
+  p.end();
+  return days;
 }
 
 bool connectWifi() {
@@ -347,7 +399,8 @@ RemindersResult runRemindersPage(const Settings& s) {
 
 void fillWeatherScreen(WeatherScreen& w, const Settings& s, const Forecast& f, int day,
                        const struct tm& shownDay, bool tomorrow, int fromHour,
-                       time_t fetchedAt, bool stale, time_t next, int batteryPct) {
+                       time_t fetchedAt, bool stale, time_t next, int batteryPct,
+                       int daysLeft) {
   memset(&w, 0, sizeof w);
   w.weekday = weekdayName(shownDay.tm_wday);
   formatIsoDate(shownDay, w.date, sizeof w.date);
@@ -368,7 +421,20 @@ void fillWeatherScreen(WeatherScreen& w, const Settings& s, const Forecast& f, i
   w.lowTier = tierForFeelsLikeF(lowF);
   w.highTier = tierForFeelsLikeF(highF);
   w.rain = rainOutlook(f, day, fromHour);
+  for (int h = 0; h < 24; ++h) w.hourlyRain[h] = f.hourlyPrecipPct[day * 24 + h];
+  w.rainFromHour = fromHour;
+  w.uvMax = d.uvMax;
+  w.gustMph = d.gustMaxMph;
+  w.aqi = maxAqi(f, day, fromHour);
+  int active = 0;
+  const int a = alertFor(f, w.date, &active);
+  if (a >= 0) {
+    snprintf(w.alert, sizeof w.alert, "%s", f.alerts[a].event);
+    formatAlertUntil(f.alerts[a], w.date, w.alertUntil, sizeof w.alertUntil);
+    w.alertMore = active - 1;
+  }
   w.batteryPercent = batteryPct;
+  w.batteryDaysLeft = daysLeft;
 }
 
 }  // namespace
@@ -439,6 +505,13 @@ void setup() {
   if (online) {
     Forecast f;
     if (fetchForecast(settings, f)) {
+      fetchAirQuality(settings, f);
+      if (!fetchAlerts(settings, f) && rtc.forecast.alertsValid) {
+        // Keep the last known alerts; they're filtered by date when drawn.
+        f.alertsValid = true;
+        f.alertCount = rtc.forecast.alertCount;
+        memcpy(f.alerts, rtc.forecast.alerts, sizeof f.alerts);
+      }
       rtc.forecast = f;
       rtc.forecastFetchedAt = now;
       fetched = true;
@@ -475,7 +548,7 @@ void setup() {
     WeatherScreen w;
     fillWeatherScreen(w, settings, rtc.forecast, day, shown, tomorrow,
                       tomorrow ? 0 : local.tm_hour, rtc.forecastFetchedAt, !fetched, next,
-                      battery);
+                      battery, batteryDaysLeft(battery, now));
     ReminderList reminders;
     loadReminders(reminders);
     char today[11];
