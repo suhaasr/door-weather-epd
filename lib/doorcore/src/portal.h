@@ -32,11 +32,31 @@ struct PortalResponse {
 };
 
 // `random32` must be a cryptographic RNG (esp_random() with the radio on).
-void initPortal(PortalState& st, ReminderList* list, uint32_t (*random32)());
+using PortalArg = std::function<std::string(const char*)>;
 
-// Handles one request. `arg(name)` returns a query/form parameter or "".
-PortalResponse handlePortalRequest(PortalState& st, const char* method, const char* path,
-                                   const std::function<std::string(const char*)>& arg);
+// The reminders web page, independent of any HTTP server: feed it each
+// request and send back the response. Access needs the one-time PIN shown on
+// the display; after that a random session token protects every action.
+class ReminderPortal {
+ public:
+  ReminderPortal(ReminderList* list, uint32_t (*random32)());
+  void setToday(const char* isoDate, int weekday);
+  PortalResponse handle(const char* method, const char* path, const PortalArg& arg);
+
+  const char* pin() const { return st_.pin; }
+  const char* token() const { return st_.token; }
+  int failedPins() const { return st_.failedPins; }
+  bool done() const { return st_.done; }
+  bool wifiSetupRequested() const { return st_.wifiSetupRequested; }
+  // True once after the reminder list changed (so the caller can save it).
+  bool takeChanged();
+
+ private:
+  static void init(PortalState& st, ReminderList* list, uint32_t (*random32)());
+  static PortalResponse dispatch(PortalState& st, const char* method, const char* path,
+                                 const PortalArg& arg);
+  PortalState st_;
+};
 
 std::string htmlEscape(const std::string& s);
 

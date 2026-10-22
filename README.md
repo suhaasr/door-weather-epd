@@ -165,13 +165,29 @@ Tap **Done** to redraw the display; the page also closes after 10 idle minutes.
 ## Development
 
 ```
-src/            ESP32 firmware (Wi-Fi, HTTP, NTP, deep sleep, display driver)
-lib/doorcore/   portable logic and drawing: schedule, battery curve, forecast parsing, clothing tiers, screens
-host/           desktop unit tests and PNG preview renderer for lib/doorcore
+src/                 ESP32-only code, one class per job:
+  main.cpp             wake -> read battery -> (setup/reminders) -> fetch -> draw -> sleep
+  storage.*            SettingsStore: settings, reminders, battery anchor in flash
+  network.*            Network: Wi-Fi, NTP, time zone
+  weather_client.*     WeatherClient: forecast, air quality, NWS alerts, ZIP lookup
+  display.*            EpaperDisplay: the GxEPD2 panel
+  setup_portal.*       SetupPortal: Wi-Fi/ZIP hotspot (WiFiManager)
+  reminders_server.*   RemindersServer: serves ReminderPortal on the home network
+  power.*              Power: battery ADC, RTC state across deep sleep, sleeping
+lib/doorcore/src/    portable logic and drawing (tested on the desktop)
+  weather_view.*       WeatherView: forecast -> WeatherScreen (day, rain, AQI, alerts, reminders)
+  screen.*             full screens, composed from components:
+  header_bar.* rain_banner.* alert_strip.* condition_chips.* reminder_strip.*
+  stat_panel.* footer_bar.* weather_layout.*  (one class per screen element)
+  portal.*             ReminderPortal: the reminders web page, independent of any server
+  battery.* forecast.* extras.* reminders.* schedule.* tz.* drift.* setup_password.* text.* icons.*
+host/                desktop tests, previews and a local reminders-page server
+  tests/test_*.cpp     one file per module; tests/test.h is the tiny harness
 ```
 
 ```sh
 make -C host test      # unit tests (needs g++ and git)
+make -C host test T=alerts   # only suites whose name contains "alerts"
 make -C host preview   # regenerate docs/img/*.png
 make -C host server    # try the reminders page at http://localhost:8080 (PIN is printed)
 pio run                # firmware build

@@ -64,4 +64,19 @@ void formatBatteryLeft(int days, char* buf, int len) {
   }
 }
 
+bool BatteryTracker::update(int64_t now, int percent) {
+  const bool reset = anchorPercent_ < 0 || anchorTime_ <= 0 || now < anchorTime_ ||
+                     percent >= anchorPercent_ + kChargeJumpPercent;
+  if (reset) {
+    anchorTime_ = now;
+    anchorPercent_ = percent;
+  }
+  return reset;
+}
+
+int BatteryTracker::daysLeft(int64_t now, int percent) const {
+  if (anchorPercent_ < 0 || anchorTime_ <= 0 || now < anchorTime_) return -1;
+  return estimateBatteryDaysLeft(anchorPercent_, percent, (now - anchorTime_) / 86400.0);
+}
+
 }  // namespace door

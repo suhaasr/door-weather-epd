@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 namespace door {
 
@@ -20,6 +21,25 @@ BatteryLevel batteryLevel(int percent);
 // Days until empty, extrapolated from the drop since the last charge
 // (anchorPct, elapsedDays ago). -1 until there's enough history.
 int estimateBatteryDaysLeft(int anchorPct, int pct, double elapsedDays);
+
+// Remembers the reading right after the last charge (the "anchor") so the
+// drain rate, and from it the days left, can be estimated.
+class BatteryTracker {
+ public:
+  BatteryTracker(int64_t anchorTime, int anchorPercent)
+      : anchorTime_(anchorTime), anchorPercent_(anchorPercent) {}
+  // Re-anchors on first use, if the clock went backwards, or after a charge
+  // (+5% or more). Returns true if the anchor changed and should be saved.
+  bool update(int64_t now, int percent);
+  int daysLeft(int64_t now, int percent) const;
+  int64_t anchorTime() const { return anchorTime_; }
+  int anchorPercent() const { return anchorPercent_; }
+
+ private:
+  static constexpr int kChargeJumpPercent = 5;
+  int64_t anchorTime_;
+  int anchorPercent_;
+};
 
 // "~5 days", "~3 weeks", "~4 months".
 void formatBatteryLeft(int days, char* buf, int len);

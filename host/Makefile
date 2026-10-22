@@ -1,5 +1,5 @@
 # Host build: unit tests and PNG previews of every screen.
-#   make test     run unit tests
+#   make test     run unit tests (make test T=alerts runs suites matching "alerts")
 #   make preview  render docs/img/*.png
 #   make server   try the reminders page at http://localhost:8080
 CXX ?= g++
@@ -16,6 +16,7 @@ CORE_SRCS := $(wildcard $(CORE)/*.cpp)
 GFX_SRCS := $(DEPS)/gfx/Adafruit_GFX.cpp
 CORE_OBJS := $(patsubst $(CORE)/%.cpp,$(BUILD)/core/%.o,$(CORE_SRCS))
 GFX_OBJS := $(BUILD)/gfx/Adafruit_GFX.o
+TEST_OBJS := $(patsubst tests/%.cpp,$(BUILD)/test_objs/%.o,$(wildcard tests/*.cpp))
 
 .PHONY: all test preview server clean deps
 all: test preview
@@ -34,11 +35,15 @@ $(BUILD)/gfx/Adafruit_GFX.o: $(DEPS)/gfx/Adafruit_GFX.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -w -c $< -o $@
 
-$(BUILD)/%.o: %.cpp $(wildcard *.h) $(wildcard $(CORE)/*.h) | $(DEPS)/gfx/Adafruit_GFX.cpp
+$(BUILD)/%.o: %.cpp $(wildcard *.h) $(wildcard tests/*.h) $(wildcard $(CORE)/*.h) | $(DEPS)/gfx/Adafruit_GFX.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD)/tests: $(BUILD)/tests.o $(CORE_OBJS) $(GFX_OBJS)
+$(BUILD)/test_objs/%.o: tests/%.cpp $(wildcard tests/*.h) $(wildcard $(CORE)/*.h) | $(DEPS)/gfx/Adafruit_GFX.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+$(BUILD)/tests: $(TEST_OBJS) $(CORE_OBJS) $(GFX_OBJS)
 	$(CXX) $^ -o $@
 
 $(BUILD)/preview: $(BUILD)/preview.o $(CORE_OBJS) $(GFX_OBJS)
@@ -51,7 +56,7 @@ server: $(BUILD)/server
 	$(BUILD)/server
 
 test: $(BUILD)/tests
-	$(BUILD)/tests
+	$(BUILD)/tests $(T)
 
 preview: $(BUILD)/preview
 	$(BUILD)/preview ../docs/img

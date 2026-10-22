@@ -51,13 +51,13 @@ int main(int argc, char** argv) {
   srandom(static_cast<unsigned>(time(nullptr)));
   ReminderList list = {};
   parseReminders("20||Pack lunch\n0|2026-10-30|Dentist 9:30 AM\n", list);
-  PortalState st;
-  initPortal(st, &list, hostRandom);
+  ReminderPortal portal(&list, hostRandom);
   time_t now = time(nullptr);
   struct tm t;
   localtime_r(&now, &t);
-  formatIsoDate(t, st.today, sizeof st.today);
-  st.todayWeekday = t.tm_wday;
+  char today[11];
+  formatIsoDate(t, today, sizeof today);
+  portal.setToday(today, t.tm_wday);
 
   int s = socket(AF_INET, SOCK_STREAM, 0);
   int one = 1;
@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
     perror("bind");
     return 1;
   }
-  printf("http://localhost:%d  PIN %s\n", port, st.pin);
+  printf("http://localhost:%d  PIN %s\n", port, portal.pin());
   fflush(stdout);
   for (;;) {
     int c = accept(s, nullptr, nullptr);
@@ -100,11 +100,8 @@ int main(int argc, char** argv) {
       auto it = params.find(name);
       return it == params.end() ? std::string() : it->second;
     };
-    PortalResponse r = handlePortalRequest(st, method.c_str(), path.c_str(), arg);
-    if (st.changed) {
-      printf("saved:\n%s", serializeReminders(list).c_str());
-      st.changed = false;
-    }
+    PortalResponse r = portal.handle(method.c_str(), path.c_str(), arg);
+    if (portal.takeChanged()) printf("saved:\n%s", serializeReminders(list).c_str());
     char head[512];
     snprintf(head, sizeof head,
              "HTTP/1.0 %d X\r\nContent-Type: text/html; charset=utf-8\r\nCache-Control: no-store\r\n"

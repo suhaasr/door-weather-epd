@@ -205,7 +205,7 @@ std::string htmlEscape(const std::string& s) {
   return out;
 }
 
-void initPortal(PortalState& st, ReminderList* list, uint32_t (*random32)()) {
+void ReminderPortal::init(PortalState& st, ReminderList* list, uint32_t (*random32)()) {
   memset(&st, 0, sizeof st);
   st.list = list;
   st.todayWeekday = -1;
@@ -214,8 +214,8 @@ void initPortal(PortalState& st, ReminderList* list, uint32_t (*random32)()) {
   for (int i = 0; i < 16; ++i) st.token[i] = kHex[uniform(random32, 16)];
 }
 
-PortalResponse handlePortalRequest(PortalState& st, const char* method, const char* path,
-                                   const std::function<std::string(const char*)>& arg) {
+PortalResponse ReminderPortal::dispatch(PortalState& st, const char* method, const char* path,
+                                        const PortalArg& arg) {
   const bool post = strcmp(method, "POST") == 0;
   if (st.done) {
     return ok(closedPage("Reminders closed",
@@ -280,6 +280,25 @@ PortalResponse handlePortalRequest(PortalState& st, const char* method, const ch
   return ok(closedPage("Wi-Fi setup",
                        "Look at the display: it now shows the name and password of a setup "
                        "hotspot. Join it to change the Wi-Fi network or ZIP code."));
+}
+
+ReminderPortal::ReminderPortal(ReminderList* list, uint32_t (*random32)()) {
+  init(st_, list, random32);
+}
+
+void ReminderPortal::setToday(const char* isoDate, int weekday) {
+  snprintf(st_.today, sizeof st_.today, "%s", isoDate);
+  st_.todayWeekday = weekday;
+}
+
+PortalResponse ReminderPortal::handle(const char* method, const char* path, const PortalArg& arg) {
+  return dispatch(st_, method, path, arg);
+}
+
+bool ReminderPortal::takeChanged() {
+  const bool changed = st_.changed;
+  st_.changed = false;
+  return changed;
 }
 
 }  // namespace door
