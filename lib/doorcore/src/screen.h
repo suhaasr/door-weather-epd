@@ -4,6 +4,8 @@
 #include "attire.h"
 #include "forecast.h"
 #include "reminders.h"
+#include "icons.h"
+#include "text.h"
 
 namespace door {
 
@@ -62,7 +64,5 @@ void drawRemindersScreen(Adafruit_GFX& g, const char* url, const char* altUrl, c
 void drawMessageScreen(Adafruit_GFX& g, const char* title, const char* body,
                        int batteryPercent);
 
-// "2 PM" / "12 AM" / "midnight" for hour 24.
-void formatHour(int hour, char* buf, int len);
 
 }  // namespace door
