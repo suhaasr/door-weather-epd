@@ -99,6 +99,18 @@ bool nwsAlertsFromDoc(const JsonDocument& doc, Forecast& f) {
     copyTime(a.starts, p["onset"] | "", p["effective"] | "");
     copyTime(a.ends, p["ends"] | "", p["expires"] | "");
     a.severity = static_cast<int8_t>(severityRank(p["severity"] | ""));
+    // NWS often sends several messages for one event (e.g. per zone); merge them.
+    WeatherAlert* same = nullptr;
+    for (int i = 0; i < f.alertCount; ++i) {
+      if (strcmp(f.alerts[i].event, a.event) == 0) same = &f.alerts[i];
+    }
+    if (same) {
+      if (*a.starts && (!*same->starts || strcmp(a.starts, same->starts) < 0)) {
+        memcpy(same->starts, a.starts, sizeof a.starts);
+      }
+      if (*a.ends && strcmp(a.ends, same->ends) > 0) memcpy(same->ends, a.ends, sizeof a.ends);
+      continue;
+    }
     // Keep the most severe few, in order; ties keep NWS order.
     int pos = f.alertCount;
     while (pos > 0 && f.alerts[pos - 1].severity < a.severity) --pos;
@@ -120,19 +132,16 @@ bool parseNwsAlerts(const char* json, size_t len, Forecast& f) {
   return nwsAlertsFromDoc(doc, f);
 }
 
-int alertFor(const Forecast& f, const char* isoDate, int* activeCount) {
-  int best = -1, count = 0;
-  if (f.alertsValid) {
-    for (int i = 0; i < f.alertCount; ++i) {
-      const WeatherAlert& a = f.alerts[i];
-      if (*a.starts && strncmp(a.starts, isoDate, 10) > 0) continue;
-      if (*a.ends && strncmp(a.ends, isoDate, 10) < 0) continue;
-      ++count;
-      if (best < 0) best = i;  // already sorted by severity
-    }
+int alertsFor(const Forecast& f, const char* isoDate, int* indices) {
+  int n = 0;
+  if (!f.alertsValid) return 0;
+  for (int i = 0; i < f.alertCount && n < kMaxAlerts; ++i) {
+    const WeatherAlert& a = f.alerts[i];
+    if (*a.starts && strncmp(a.starts, isoDate, 10) > 0) continue;
+    if (*a.ends && strncmp(a.ends, isoDate, 10) < 0) continue;
+    indices[n++] = i;  // already sorted by severity
   }
-  if (activeCount) *activeCount = count;
-  return best;
+  return n;
 }
 
 int weekdayOfIsoDate(const char* iso) {

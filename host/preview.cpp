@@ -54,6 +54,12 @@ static void hourly(WeatherScreen& s, int fromHour) {
   }
 }
 
+static void alert(WeatherScreen& s, const char* event, const char* until) {
+  strcpy(s.alerts[s.alertCount].event, event);
+  strcpy(s.alerts[s.alertCount].until, until);
+  ++s.alertCount;
+}
+
 static void temps(WeatherScreen& s, float lo, float hi) {
   s.feelsLow = lo;
   s.feelsHigh = hi;
@@ -157,11 +163,26 @@ int main(int argc, char** argv) {
   temps(s, 18, 29);
   s.rain = {true, true, 90, 4, 23};
   hourly(s, 7);
-  strcpy(s.alert, "Winter Storm Warning");
-  strcpy(s.alertUntil, "until Sat 4 PM");
+  alert(s, "Winter Storm Warning", "until Sat 4 PM");
   s.gustMph = 41;
   drawWeatherScreen(c, s);
   save(c, dir, "alert");
+
+  // Several alerts on a hot, smoky day
+  s = base();
+  s.weekday = "Saturday";
+  strcpy(s.date, "2026-08-15");
+  temps(s, 78, 104);
+  s.rain = {false, false, 0, -1, -1};
+  alert(s, "Excessive Heat Warning", "until Sun 8 PM");
+  alert(s, "Red Flag Warning", "until 9 PM");
+  alert(s, "Air Quality Alert", "until Sun 11 PM");
+  alert(s, "Wind Advisory", "until 6 PM");
+  s.uvMax = 9;
+  s.gustMph = 38;
+  s.aqi = 172;
+  drawWeatherScreen(c, s);
+  save(c, dir, "alerts_multiple");
 
   // Sunny but smoky
   s = base();
@@ -179,9 +200,8 @@ int main(int argc, char** argv) {
   temps(s, 36, 49);
   s.rain = {true, false, 80, 15, 21};
   hourly(s, 7);
-  strcpy(s.alert, "Wind Advisory");
-  strcpy(s.alertUntil, "until 11 PM");
-  s.alertMore = 1;
+  alert(s, "Wind Advisory", "until 11 PM");
+  alert(s, "Flood Watch", "until Wed 6 AM");
   s.gustMph = 48;
   s.aqi = 118;
   s.reminders[0] = "Pack lunch";

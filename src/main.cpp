@@ -426,12 +426,12 @@ void fillWeatherScreen(WeatherScreen& w, const Settings& s, const Forecast& f, i
   w.uvMax = d.uvMax;
   w.gustMph = d.gustMaxMph;
   w.aqi = maxAqi(f, day, fromHour);
-  int active = 0;
-  const int a = alertFor(f, w.date, &active);
-  if (a >= 0) {
-    snprintf(w.alert, sizeof w.alert, "%s", f.alerts[a].event);
-    formatAlertUntil(f.alerts[a], w.date, w.alertUntil, sizeof w.alertUntil);
-    w.alertMore = active - 1;
+  int idx[kMaxAlerts];
+  w.alertCount = alertsFor(f, w.date, idx);
+  for (int i = 0; i < w.alertCount; ++i) {
+    const WeatherAlert& a = f.alerts[idx[i]];
+    snprintf(w.alerts[i].event, sizeof w.alerts[i].event, "%s", a.event);
+    formatAlertUntil(a, w.date, w.alerts[i].until, sizeof w.alerts[i].until);
   }
   w.batteryPercent = batteryPct;
   w.batteryDaysLeft = daysLeft;

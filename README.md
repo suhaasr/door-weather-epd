@@ -22,9 +22,9 @@ Below 5% battery a black recharge banner appears at the bottom; at 1% the entire
 |---|---|---|
 | ![](docs/img/setup.png) | ![](docs/img/offline.png) | ![](docs/img/evening_setup.png) |
 
-| Weather alert + wind | Sunscreen + air quality | Everything at once (compact layout) |
-|---|---|---|
-| ![](docs/img/alert.png) | ![](docs/img/air_quality.png) | ![](docs/img/everything_low_battery.png) |
+| Weather alert + wind | Several alerts | Sunscreen + air quality | Everything at once (compact layout) |
+|---|---|---|---|
+| ![](docs/img/alert.png) | ![](docs/img/alerts_multiple.png) | ![](docs/img/air_quality.png) | ![](docs/img/everything_low_battery.png) |
 
 | Reminders | Reminders + rain + low battery | Reminders page (PIN) |
 |---|---|---|
@@ -143,8 +143,8 @@ Tap **Done** to redraw the display; the page also closes after 10 idle minutes.
   The subtitle shows the peak chance and the time span.
 - **Feels like:** Open-Meteo's daily apparent-temperature min/max. The tiers are: Freezing < 32°F,
   Cold < 45, Chilly < 55, Cool < 65, Mild < 75, Warm < 85, Hot.
-- **Alerts:** from `api.weather.gov` for your ZIP's coordinates; the most severe alert in effect that day is
-  shown, with "+N more alerts" if there are others. If the alert request fails, the last known alerts are kept.
+- **Alerts:** from `api.weather.gov` for your ZIP's coordinates; every alert in effect that day is listed
+  (most severe first, in large type; the rest in smaller text, wrapping to a second line if needed). If the alert request fails, the last known alerts are kept.
 - **Extras:** UV index and wind gusts come from the same Open-Meteo forecast; AQI is the highest US AQI for the
   rest of the day from Open-Meteo's free air-quality API. Thresholds are in `lib/doorcore/src/extras.h`.
 - **Battery estimate:** after at least 2 days and a 3% drop since the last charge, the footer shows e.g.

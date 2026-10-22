@@ -207,28 +207,82 @@ void drawRain(Adafruit_GFX& g, const WeatherScreen& s, int top, bool compact) {
   }
 }
 
-void drawAlertStrip(Adafruit_GFX& g, const WeatherScreen& s, int top, int h) {
-  g.fillRoundRect(12, top, kScreenW - 24, h, 10, kBlack);
-  const int cy = top + h / 2;
+// The most severe alert is large on the first line; the rest follow in small
+// text, wrapping onto extra lines as needed.
+struct AlertLayout {
+  const GFXfont* mainFont;
+  int line[kMaxAlerts];  // line (0-based) each alert is drawn on
+  int lines;
+  int height;
+};
+
+constexpr int kAlertX0 = 78, kAlertRight = kScreenW - 30, kAlertSep = 30;
+constexpr int kAlertLineH = 24;
+
+int extraAlertWidth(const ScreenAlert& a) {
+  return textWidth(kSmallBold, a.event) + 6 + textWidth(kSmall, a.until);
+}
+
+void upperCopy(const char* in, char* out, size_t len) {
+  size_t i = 0;
+  for (; in[i] && i + 1 < len; ++i) out[i] = static_cast<char>(toupper(in[i]));
+  out[i] = 0;
+}
+
+AlertLayout layoutAlerts(const WeatherScreen& s) {
+  AlertLayout l = {kTitle, {}, 0, 0};
+  if (s.alertCount <= 0) return l;
+  char event[40];
+  upperCopy(s.alerts[0].event, event, sizeof event);
+  auto mainWidth = [&](const GFXfont* f) {
+    return textWidth(f, event) + 14 + textWidth(kBody, s.alerts[0].until);
+  };
+  if (kAlertX0 + mainWidth(kTitle) > kAlertRight) l.mainFont = kBodyBold;
+  int x = kAlertX0 + mainWidth(l.mainFont);
+  int line = 0;
+  for (int i = 1; i < s.alertCount; ++i) {
+    const int w = extraAlertWidth(s.alerts[i]);
+    if (x + kAlertSep + w > kAlertRight && x > kAlertX0) {
+      ++line;
+      x = kAlertX0 - kAlertSep;
+    }
+    l.line[i] = line;
+    x += kAlertSep + w;
+  }
+  l.lines = line + 1;
+  l.height = 44 + line * kAlertLineH + (line ? 4 : 0);
+  return l;
+}
+
+void drawAlertStrip(Adafruit_GFX& g, const WeatherScreen& s, int top, const AlertLayout& l) {
+  g.fillRoundRect(12, top, kScreenW - 24, l.height, 10, kBlack);
+  const int cy = top + 22;
   g.fillTriangle(44, cy - 16, 25, cy + 15, 63, cy + 15, kWhite);
   g.fillRect(42, cy - 7, 5, 13, kBlack);
   g.fillRect(42, cy + 9, 5, 4, kBlack);
 
   char event[40];
-  size_t i = 0;
-  for (; s.alert[i] && i + 1 < sizeof event; ++i) event[i] = toupper(s.alert[i]);
-  event[i] = 0;
-  char more[24] = "";
-  if (s.alertMore > 0) {
-    snprintf(more, sizeof more, "+%d more alert%s", s.alertMore, s.alertMore == 1 ? "" : "s");
+  upperCopy(s.alerts[0].event, event, sizeof event);
+  text(g, l.mainFont, kAlertX0, cy + (l.mainFont == kTitle ? 12 : 9), event, kWhite);
+  int x = kAlertX0 + textWidth(l.mainFont, event) + 14;
+  text(g, kBody, x, cy + 9, s.alerts[0].until, kWhite);
+  x += textWidth(kBody, s.alerts[0].until);
+
+  int line = 0;
+  for (int i = 1; i < s.alertCount; ++i) {
+    if (l.line[i] != line) {
+      line = l.line[i];
+      x = kAlertX0 - kAlertSep;
+    }
+    const int baseline = line == 0 ? cy + 8 : top + 34 + line * kAlertLineH;
+    const ScreenAlert& a = s.alerts[i];
+    g.fillCircle(x + kAlertSep / 2, baseline - 5, 3, kWhite);
+    x += kAlertSep;
+    text(g, kSmallBold, x, baseline, a.event, kWhite);
+    x += textWidth(kSmallBold, a.event) + 6;
+    text(g, kSmall, x, baseline, a.until, kWhite);
+    x += textWidth(kSmall, a.until);
   }
-  const int x0 = 78, right = kScreenW - 30;
-  const int moreW = *more ? textWidth(kSmall, more) + 20 : 0;
-  const GFXfont* f = kTitle;
-  if (x0 + textWidth(f, event) + 14 + textWidth(kBody, s.alertUntil) + moreW > right) f = kBodyBold;
-  text(g, f, x0, cy + (f == kTitle ? 12 : 9), event, kWhite);
-  text(g, kBody, x0 + textWidth(f, event) + 14, cy + 9, s.alertUntil, kWhite);
-  if (*more) textRight(g, kSmall, right, cy + 7, more, kWhite);
 }
 
 int conditionItems(const WeatherScreen& s, char items[3][48]) {
@@ -384,9 +438,10 @@ void drawWeatherScreen(Adafruit_GFX& g, const WeatherScreen& s) {
   const bool low = batteryLevel(s.batteryPercent) != BatteryLevel::Ok;
   const int bottom = low ? 408 : 444;
   char items[3][48];
-  const int nItems = conditionItems(s, items);
-  const int alertH = s.alert[0] ? 44 : 0;
-  const int chipsH = nItems ? 36 : 0;
+  int nItems = conditionItems(s, items);
+  const AlertLayout alertLayout = layoutAlerts(s);
+  const int alertH = alertLayout.height;
+  int chipsH = nItems ? 36 : 0;
   int remindersH = s.reminderCount > 0 ? 54 : 0;
   auto panelRoom = [&](int rainH) {
     int used = 56 + (alertH ? alertH + 8 : 0) + rainH + 10 + (chipsH ? chipsH + 8 : 0) +
@@ -396,10 +451,15 @@ void drawWeatherScreen(Adafruit_GFX& g, const WeatherScreen& s) {
   // Shrink the rain banner (and reminders) when everything wouldn't fit.
   const bool compact = panelRoom(rainHeight(s, false)) < 130;
   if (compact && remindersH) remindersH = 48;
+  // On extremely busy days the UV/wind/AQI notes give way to the temperatures.
+  if (compact && chipsH && panelRoom(rainHeight(s, true)) < 72) {
+    chipsH = 0;
+    nItems = 0;
+  }
 
   int top = 56;
   if (alertH) {
-    drawAlertStrip(g, s, top - 2, alertH);
+    drawAlertStrip(g, s, top - 2, alertLayout);
     top += alertH + 8 - 2;
   }
   drawRain(g, s, top, compact);

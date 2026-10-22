@@ -575,15 +575,18 @@ static void testExtras() {
   CHECK(strcmp(url, "https://api.weather.gov/alerts/active?point=37.7631,-122.4129") == 0);
   json = readFile("fixtures/nws_alerts_ak.json");
   CHECK(parseNwsAlerts(json.data(), json.size(), f));
-  CHECK(f.alertsValid && f.alertCount == kMaxAlerts);
+  CHECK(f.alertsValid && f.alertCount == 4);  // two High Surf Advisories merged
   CHECK(strcmp(f.alerts[0].event, "Blizzard Warning") == 0);  // Extreme; the cancelled one is skipped
   CHECK(f.alerts[0].severity == 4 && f.alerts[1].severity == 3 && f.alerts[2].severity == 3);
   CHECK(strcmp(f.alerts[1].event, "High Wind Watch") == 0);
   CHECK(strcmp(f.alerts[0].ends, "2026-10-24T01:00") == 0);
-  int active = 0;
-  CHECK(alertFor(f, "2026-10-23", &active) == 0 && active == 3);
-  CHECK(alertFor(f, "2026-10-22", &active) == -1 && active == 0);
-  CHECK(alertFor(f, "2026-10-25", &active) == 1 && active == 1);  // only the watch lasts
+  CHECK(strcmp(f.alerts[3].event, "High Surf Advisory") == 0);
+  CHECK(strcmp(f.alerts[3].starts, "2026-10-23T04:00") == 0);
+  CHECK(strcmp(f.alerts[3].ends, "2026-10-25T22:00") == 0);
+  int idx[kMaxAlerts];
+  CHECK(alertsFor(f, "2026-10-23", idx) == 4 && idx[0] == 0 && idx[3] == 3);
+  CHECK(alertsFor(f, "2026-10-22", idx) == 0);
+  CHECK(alertsFor(f, "2026-10-25", idx) == 2 && idx[0] == 1 && idx[1] == 3);
   formatAlertUntil(f.alerts[0], "2026-10-23", buf, sizeof buf);
   CHECK(strcmp(buf, "until Sat 1 AM") == 0);
   formatAlertUntil(f.alerts[0], "2026-10-24", buf, sizeof buf);
@@ -611,9 +614,13 @@ static void testExtras() {
   s.batteryDaysLeft = 4;
   s.rain = {true, true, 90, 6, 22};
   for (int h = 6; h < 23; ++h) s.hourlyRain[h] = 90;
-  strcpy(s.alert, "Blizzard Warning");
-  strcpy(s.alertUntil, "until Sat 1 AM");
-  s.alertMore = 2;
+  const char* ev[] = {"Blizzard Warning", "High Wind Warning", "Winter Storm Watch",
+                      "Coastal Flood Advisory"};
+  for (int i = 0; i < 4; ++i) {
+    strcpy(s.alerts[i].event, ev[i]);
+    strcpy(s.alerts[i].until, "until Sat 1 AM");
+  }
+  s.alertCount = 4;
   s.uvMax = 7;
   s.gustMph = 45;
   s.aqi = 160;
@@ -623,7 +630,7 @@ static void testExtras() {
   s.reminderCount = 2;
   drawWeatherScreen(canvas, s);
   CHECK(blackPixels(canvas, 0, 410, kScreenW, kScreenH) > kScreenW * 70 * 3 / 4);
-  CHECK(blackPixels(canvas, 12, 56, kScreenW - 12, 96) > 20000);  // alert strip
+  CHECK(blackPixels(canvas, 12, 56, kScreenW - 12, 120) > 35000);  // two-line alert strip
 }
 
 int main() {

@@ -17,7 +17,7 @@ struct DayForecast {
   float gustMaxMph;     // wind_gusts_10m_max, < 0 if missing
 };
 
-constexpr int kMaxAlerts = 3;
+constexpr int kMaxAlerts = 4;
 
 // An active National Weather Service alert. Times are the issuing office's
 // local time ("YYYY-MM-DDTHH:MM"), which matches the forecast location.

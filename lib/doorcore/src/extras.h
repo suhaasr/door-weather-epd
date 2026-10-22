@@ -33,9 +33,9 @@ void nwsAlertsFilter(JsonDocument& filter);
 bool nwsAlertsFromDoc(const JsonDocument& doc, Forecast& f);
 bool parseNwsAlerts(const char* json, size_t len, Forecast& f);
 
-// Index of the most severe alert in effect at some point on isoDate, or -1.
-// activeCount receives how many stored alerts are in effect that day.
-int alertFor(const Forecast& f, const char* isoDate, int* activeCount);
+// Alerts in effect at some point on isoDate, most severe first. Returns how
+// many were written to indices (up to kMaxAlerts).
+int alertsFor(const Forecast& f, const char* isoDate, int* indices);
 
 // "until 4 PM" if the alert ends on isoDate, else "until Sat 4 PM".
 void formatAlertUntil(const WeatherAlert& a, const char* isoDate, char* buf, size_t len);
