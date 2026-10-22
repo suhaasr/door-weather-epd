@@ -34,7 +34,7 @@ static WeatherScreen base() {
   s.batteryDaysLeft = 63;
   s.uvMax = -1;
   s.gustMph = -1;
-  s.aqi = -1;
+  s.aqi = 38;
   return s;
 }
 

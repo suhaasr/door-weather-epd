@@ -38,7 +38,7 @@ struct WeatherScreen {
   int alertCount;
   float uvMax;            // < 0 if unknown
   float gustMph;          // < 0 if unknown
-  int aqi;                // US AQI, < 0 if unknown
+  int aqi;                // highest US AQI for the rest of the day, < 0 if unknown
   int batteryDaysLeft;    // <= 0 if unknown
 };
 

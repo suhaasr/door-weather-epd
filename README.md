@@ -5,8 +5,9 @@ A battery-powered 7.5" e-ink display for the front door. Each morning it shows:
 - whether it's likely to rain today (any hour ≥ 10%) with a big **BRING AN UMBRELLA** banner and an
   hour-by-hour bar chart (6 AM–10 PM), so you can see if it'll rain on the way home,
 - active National Weather Service alerts (winter storm, heat advisory, high wind, …) as a black strip on top,
-- "Wear sunscreen" (UV ≥ 6), "Windy" (gusts ≥ 30 mph) and air-quality (US AQI > 100, e.g. wildfire smoke) notes,
+- "Wear sunscreen" (UV ≥ 6) and "Windy" (gusts ≥ 30 mph) notes,
 - today's "feels like" low and high, each labelled with a tier (Freezing, Cold, Chilly, Cool, Mild, Warm, Hot),
+  next to the day's air quality (highest US AQI for the rest of the day, e.g. "162 Unhealthy" on smoke days),
 - the weekday and date (`YYYY-MM-DD`), update time and battery level, so you can tell it refreshed today,
 - an estimate of the days/weeks of battery left, based on how fast it has drained since the last charge.
 
@@ -22,7 +23,7 @@ Below 5% battery a black recharge banner appears at the bottom; at 1% the entire
 |---|---|---|
 | ![](docs/img/setup.png) | ![](docs/img/offline.png) | ![](docs/img/evening_setup.png) |
 
-| Weather alert + wind | Several alerts | Sunscreen + air quality | Everything at once (compact layout) |
+| Weather alert + wind | Several alerts | Sunscreen + bad air quality | Everything at once (compact layout) |
 |---|---|---|---|
 | ![](docs/img/alert.png) | ![](docs/img/alerts_multiple.png) | ![](docs/img/air_quality.png) | ![](docs/img/everything_low_battery.png) |
 

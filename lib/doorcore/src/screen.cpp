@@ -297,9 +297,6 @@ int conditionItems(const WeatherScreen& s, char items[3][48]) {
       snprintf(items[n++], 48, "Windy: gusts %d mph", static_cast<int>(lroundf(s.gustMph)));
     }
   }
-  if (s.aqi >= kAqiAlert) {
-    snprintf(items[n++], 48, "Air quality: %s (%d)", aqiCategory(s.aqi), s.aqi);
-  }
   return n;
 }
 
@@ -325,41 +322,42 @@ void drawConditions(Adafruit_GFX& g, char items[3][48], int n, int top, int h) {
   }
 }
 
-void drawTemperature(Adafruit_GFX& g, int x, int baseline, float value, char unit,
-                     bool small = false) {
-  char num[8];
-  snprintf(num, sizeof num, "%d", static_cast<int>(lroundf(value)));
-  const bool fits = !small && strlen(num) <= 2;
-  const GFXfont* f = fits ? kHuge : kHeadline;
+// Big number (kHuge, or kHeadline when small) with an optional degree + unit.
+void drawBigNumber(Adafruit_GFX& g, int x, int baseline, const char* num, char unit, bool small) {
+  const GFXfont* f = small ? kHeadline : kHuge;
   text(g, f, x, baseline, num, kBlack);
-  int w = textWidth(f, num);
-  int capH = fits ? 63 : 34;
-  int r = fits ? 9 : 6;
-  drawDegree(g, x + w + r + 2, baseline - capH + r, r, fits ? 4 : 3, kBlack, kWhite);
+  if (!unit) return;
+  const int w = textWidth(f, num);
+  const int capH = small ? 34 : 63;
+  const int r = small ? 6 : 9;
+  drawDegree(g, x + w + r + 2, baseline - capH + r, r, small ? 3 : 4, kBlack, kWhite);
   char u[2] = {unit, 0};
-  text(g, fits ? kTitle : kBodyBold, x + w + 2 * r + 8, baseline - capH + 26, u, kBlack);
+  text(g, small ? kBodyBold : kTitle, x + w + 2 * r + 8, baseline - capH + 26, u, kBlack);
 }
 
-void drawAttirePanel(Adafruit_GFX& g, int x0, int top, int bottom, const char* label,
-                     float temp, char unit, Tier tier) {
+// One of the three equal panels: label, big number, caption underneath.
+void drawStatPanel(Adafruit_GFX& g, int x0, int w, int top, int bottom, const char* label,
+                   const char* num, char unit, const char* caption) {
   const int h = bottom - top;
   const int tx = x0 + 22;
-  const int rx = x0 + 215;
-  if (h >= 130) {
-    const int y = top + (h - 130) / 2;  // centre the ~130 px of content
-    text(g, kBodyBold, tx, y + 30, label, kBlack);
-    drawTemperature(g, tx, y + 112, temp, unit);
-    text(g, kTitle, rx, y + 98, tierName(tier), kBlack);
-  } else if (h >= 100) {
-    const int y = top + (h - 100) / 2;
-    text(g, kBodyBold, tx, y + 24, label, kBlack);
-    drawTemperature(g, tx, y + 94, temp, unit);
-    text(g, kTitle, rx, y + 80, tierName(tier), kBlack);
+  const int maxW = w - 30;
+  if (h >= 150) {
+    const int y = top + (h - 150) / 2;  // centre the ~150 px of content
+    text(g, kBodyBold, tx, y + 28, label, kBlack);
+    drawBigNumber(g, tx, y + 104, num, unit, false);
+    const GFXfont* f = textWidth(kTitle, caption) <= maxW ? kTitle : kBodyBold;
+    textWrapped(g, f, tx, y + 140, maxW, 26, caption, kBlack);
+  } else if (h >= 112) {
+    const int y = top + (h - 112) / 2;
+    text(g, kBodyBold, tx, y + 22, label, kBlack);
+    drawBigNumber(g, tx, y + 86, num, unit, false);
+    text(g, textWidth(kBodyBold, caption) <= maxW ? kBodyBold : kSmallBold, tx, y + 108, caption,
+         kBlack);
   } else {
-    const int y = top + std::max(0, (h - 72) / 2);
-    text(g, kSmallBold, tx, y + 18, label, kBlack);
-    drawTemperature(g, tx, y + 64, temp, unit, true);
-    text(g, kBodyBold, rx, y + 58, tierName(tier), kBlack);
+    const int y = top + std::max(0, (h - 80) / 2);
+    text(g, kSmallBold, tx, y + 15, label, kBlack);
+    drawBigNumber(g, tx, y + 56, num, unit, true);
+    text(g, kSmallBold, tx, y + 75, caption, kBlack);
   }
 }
 
@@ -449,10 +447,10 @@ void drawWeatherScreen(Adafruit_GFX& g, const WeatherScreen& s) {
     return bottom - used;
   };
   // Shrink the rain banner (and reminders) when everything wouldn't fit.
-  const bool compact = panelRoom(rainHeight(s, false)) < 130;
+  const bool compact = panelRoom(rainHeight(s, false)) < 150;
   if (compact && remindersH) remindersH = 48;
   // On extremely busy days the UV/wind/AQI notes give way to the temperatures.
-  if (compact && chipsH && panelRoom(rainHeight(s, true)) < 72) {
+  if (compact && chipsH && panelRoom(rainHeight(s, true)) < 80) {
     chipsH = 0;
     nItems = 0;
   }
@@ -472,10 +470,20 @@ void drawWeatherScreen(Adafruit_GFX& g, const WeatherScreen& s) {
     drawReminderStrip(g, top, remindersH, s.reminders, s.reminderCount);
     top += remindersH + 6;
   }
-  drawAttirePanel(g, 0, top, bottom, "FEELS LIKE LOW", s.feelsLow, s.unit, s.lowTier);
-  g.fillRect(kScreenW / 2 - 1, top + 12, 2, bottom - top - 24, kBlack);
-  drawAttirePanel(g, kScreenW / 2, top, bottom, "FEELS LIKE HIGH", s.feelsHigh, s.unit,
-                  s.highTier);
+  constexpr int kPanelW = kScreenW / 3;
+  char lo[8], hi[8], aqi[8];
+  snprintf(lo, sizeof lo, "%d", static_cast<int>(lroundf(s.feelsLow)));
+  snprintf(hi, sizeof hi, "%d", static_cast<int>(lroundf(s.feelsHigh)));
+  snprintf(aqi, sizeof aqi, "%s", "--");
+  if (s.aqi >= 0) snprintf(aqi, sizeof aqi, "%d", s.aqi);
+  drawStatPanel(g, 0, kPanelW, top, bottom, "FEELS LIKE LOW", lo, s.unit, tierName(s.lowTier));
+  drawStatPanel(g, kPanelW, kPanelW, top, bottom, "FEELS LIKE HIGH", hi, s.unit,
+                tierName(s.highTier));
+  drawStatPanel(g, 2 * kPanelW, kScreenW - 2 * kPanelW, top, bottom, "AIR QUALITY", aqi, 0,
+                s.aqi >= 0 ? aqiCategory(s.aqi) : "No data");
+  for (int k = 1; k < 3; ++k) {
+    g.fillRect(k * kPanelW - 1, top + 12, 2, bottom - top - 24, kBlack);
+  }
 
   if (low) {
     drawLowBatteryBanner(g, bottom, s.batteryPercent, s.batteryDaysLeft);

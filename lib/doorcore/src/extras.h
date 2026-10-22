@@ -11,7 +11,6 @@ namespace door {
 
 constexpr float kSunscreenUvIndex = 6;  // "high" on the WHO scale
 constexpr int kWindyGustMph = 30;
-constexpr int kAqiAlert = 101;  // above "Moderate"
 
 void buildAirQualityUrl(char* buf, size_t len, float lat, float lon);
 
