@@ -7,7 +7,9 @@ A battery-powered 7.5" e-ink display for the front door. Each morning it shows:
 - active National Weather Service alerts (winter storm, heat advisory, high wind, …) as a black strip on top,
 - "Wear sunscreen" (UV ≥ 6) and "Windy" (gusts ≥ 30 mph) notes,
 - today's "feels like" low and high, each labelled with a tier (Freezing, Cold, Chilly, Cool, Mild, Warm, Hot),
-  next to the day's air quality (highest US AQI for the rest of the day, e.g. "162 Unhealthy" on smoke days),
+  next to the day's air quality (highest US AQI for the rest of the day, e.g. "162 Unhealthy" on smoke days;
+  Moderate adds an outlined warning triangle, Unhealthy for some a solid one, and Unhealthy or worse turns the
+  panel black),
 - the weekday and date (`YYYY-MM-DD`), update time and battery level, so you can tell it refreshed today,
 - an estimate of the days/weeks of battery left, based on how fast it has drained since the last charge.
 
@@ -26,6 +28,10 @@ Below 5% battery a black recharge banner appears at the bottom; at 1% the entire
 | Weather alert + wind | Several alerts | Sunscreen + bad air quality | Everything at once (compact layout) |
 |---|---|---|---|
 | ![](docs/img/alert.png) | ![](docs/img/alerts_multiple.png) | ![](docs/img/air_quality.png) | ![](docs/img/everything_low_battery.png) |
+
+| Moderate air quality | Unhealthy for sensitive groups |
+|---|---|
+| ![](docs/img/aqi_moderate.png) | ![](docs/img/aqi_sensitive.png) |
 
 | Reminders | Reminders + rain + low battery | Reminders page (PIN) |
 |---|---|---|

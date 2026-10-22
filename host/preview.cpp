@@ -184,6 +184,17 @@ int main(int argc, char** argv) {
   drawWeatherScreen(c, s);
   save(c, dir, "alerts_multiple");
 
+  // Moderate and "unhealthy for some" air quality
+  s = base();
+  temps(s, 58, 74);
+  s.rain = {false, false, 5, -1, -1};
+  s.aqi = 78;
+  drawWeatherScreen(c, s);
+  save(c, dir, "aqi_moderate");
+  s.aqi = 128;
+  drawWeatherScreen(c, s);
+  save(c, dir, "aqi_sensitive");
+
   // Sunny but smoky
   s = base();
   temps(s, 61, 84);

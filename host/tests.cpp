@@ -631,6 +631,22 @@ static void testExtras() {
   drawWeatherScreen(canvas, s);
   CHECK(blackPixels(canvas, 0, 410, kScreenW, kScreenH) > kScreenW * 70 * 3 / 4);
   CHECK(blackPixels(canvas, 12, 56, kScreenW - 12, 120) > 35000);  // two-line alert strip
+
+  // Air quality gets louder as it worsens: nothing, outlined, solid, inverted.
+  WeatherScreen q = {};
+  q.weekday = "Wednesday";
+  strcpy(q.date, "2026-10-21");
+  q.unit = 'F';
+  q.batteryPercent = 80;
+  int prev = -1;
+  for (int aqi : {30, 75, 125, 175}) {
+    q.aqi = aqi;
+    drawWeatherScreen(canvas, q);
+    const int black = blackPixels(canvas, 2 * kScreenW / 3 + 2, 200, kScreenW, 440);
+    CHECK(black > prev);
+    prev = black;
+  }
+  CHECK(prev > (kScreenW / 3 - 20) * 200 / 2);  // mostly black when unhealthy
 }
 
 int main() {
