@@ -8,7 +8,6 @@
 #include <Adafruit_GFX.h>
 
 #include "attire.h"
-#include "figures.h"
 #include "png.h"
 #include "screen.h"
 
@@ -99,22 +98,6 @@ int main(int argc, char** argv) {
                     76);
   save(c, dir, "error");
 
-  // Every outfit tier for both figures.
-  c.fillScreen(kWhite);
-  const Tier tiers[] = {Tier::Freezing, Tier::Cold, Tier::Chilly, Tier::Cool,
-                        Tier::Mild,     Tier::Warm, Tier::Hot};
-  for (int i = 0; i < 7; ++i) {
-    int x = 8 + i * 113;
-    drawPerson(c, x, 20, 0.52f, Gender::Man, outfitFor(tiers[i], Gender::Man));
-    drawPerson(c, x + 54, 20, 0.52f, Gender::Woman, outfitFor(tiers[i], Gender::Woman));
-    drawPerson(c, x - 2, 150, 1.1f, i % 2 ? Gender::Woman : Gender::Man,
-               outfitFor(tiers[i], i % 2 ? Gender::Woman : Gender::Man));
-    c.setFont(nullptr);
-    c.setTextColor(kBlack);
-    c.setCursor(x + 20, 135);
-    c.print(tierName(tiers[i]));
-  }
-  save(c, dir, "outfits");
   // Reminders
   s = base();
   s.weekday = "Tuesday";

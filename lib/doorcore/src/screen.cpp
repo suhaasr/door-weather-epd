@@ -12,7 +12,7 @@
 #include <string.h>
 
 #include "battery.h"
-#include "figures.h"
+#include "icons.h"
 #include "fonts/DejaVuSansBold44pt7b.h"
 
 namespace door {
@@ -26,8 +26,6 @@ const GFXfont* const kBodyBold = &FreeSansBold12pt7b;
 const GFXfont* const kTitle = &FreeSansBold18pt7b;
 const GFXfont* const kHeadline = &FreeSansBold24pt7b;
 const GFXfont* const kHuge = &DejaVuSans_Bold44pt7b;
-
-constexpr float kFigureScale = 0.9f;
 
 int textWidth(const GFXfont* f, const char* s) {
   int adv = 0;
@@ -176,23 +174,14 @@ void drawTemperature(Adafruit_GFX& g, int x, int baseline, float value, char uni
 
 void drawAttirePanel(Adafruit_GFX& g, int x0, int top, int bottom, const char* label,
                      float temp, char unit, Tier tier) {
+  // Content is ~165 px tall; centre it when reminders/battery leave more room.
+  const int y = top + std::max(0, (bottom - top - 175) / 2);
   const int tx = x0 + 22;
-  text(g, kBodyBold, tx, top + 30, label, kBlack);
-  drawTemperature(g, tx, top + 106, temp, unit);
-  text(g, kTitle, tx, top + 150, tierName(tier), kBlack);
-  if (bottom - top >= 220) textWrapped(g, kSmall, tx, top + 176, 172, 21, tierAdvice(tier), kBlack);
-
-  // Keep figures clear of the panel label; shrink them when the low-battery
-  // banner takes vertical space.
-  const int areaTop = top + 40;
-  const int avail = bottom - areaTop - 6;
-  const float scale = std::min(kFigureScale, avail / static_cast<float>(kPersonUnitsH));
-  const int figH = static_cast<int>(kPersonUnitsH * scale);
-  const int figW = static_cast<int>(kPersonUnitsW * kFigureScale);
-  const int figTop = areaTop + (avail - figH) / 2;
-  drawPerson(g, x0 + 198, figTop, scale, Gender::Man, outfitFor(tier, Gender::Man));
-  drawPerson(g, x0 + 198 + figW + 4, figTop, scale, Gender::Woman,
-             outfitFor(tier, Gender::Woman));
+  const int rx = x0 + 215;
+  text(g, kBodyBold, tx, y + 30, label, kBlack);
+  drawTemperature(g, tx, y + 112, temp, unit);
+  text(g, kTitle, rx, y + 76, tierName(tier), kBlack);
+  textWrapped(g, kBody, rx, y + 106, x0 + 400 - rx - 14, 27, tierAdvice(tier), kBlack);
 }
 
 void drawLowBatteryBanner(Adafruit_GFX& g, int top, int pct) {

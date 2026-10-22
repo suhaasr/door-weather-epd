@@ -3,7 +3,7 @@
 A battery-powered 7.5" e-ink display for the front door. Each morning it shows:
 
 - whether it's likely to rain today (any hour ≥ 10%) with a big **BRING AN UMBRELLA** banner,
-- today's "feels like" low and high, each with outfit figures for a man and a woman,
+- today's "feels like" low and high, each with what to wear (e.g. "Chilly: light jacket & long pants"),
 - the weekday and date (`YYYY-MM-DD`), update time and battery level, so you can tell it refreshed today.
 
 It wakes once an hour from **3 AM to 10 AM** (8 refreshes/day) and deep-sleeps the rest of the time.
@@ -14,9 +14,9 @@ Below 5% battery a black recharge banner appears at the bottom; at 1% the entire
 |---|---|---|---|
 | ![](docs/img/rainy.png) | ![](docs/img/sunny.png) | ![](docs/img/low_battery.png) | ![](docs/img/critical_battery.png) |
 
-| Wi-Fi setup | Offline (stale data) | Set up in the evening (shows tomorrow) | Outfit tiers |
-|---|---|---|---|
-| ![](docs/img/setup.png) | ![](docs/img/offline.png) | ![](docs/img/evening_setup.png) | ![](docs/img/outfits.png) |
+| Wi-Fi setup | Offline (stale data) | Set up in the evening (shows tomorrow) |
+|---|---|---|
+| ![](docs/img/setup.png) | ![](docs/img/offline.png) | ![](docs/img/evening_setup.png) |
 
 | Reminders | Reminders + rain + low battery | Reminders page (PIN) |
 |---|---|---|
@@ -133,7 +133,7 @@ Tap **Done** to redraw the display; the page also closes after 10 idle minutes.
   wake, and the firmware learns the ESP32 sleep-timer drift so wakes stay on the hour.
 - **Rain:** "likely" means any hour from now until midnight has ≥ 10% precipitation probability (snow counts).
   The subtitle shows the peak chance and the time span.
-- **Feels like:** Open-Meteo's daily apparent-temperature min/max. Outfits use 7 tiers: Freezing < 32°F,
+- **Feels like:** Open-Meteo's daily apparent-temperature min/max. Clothing advice uses 7 tiers: Freezing < 32°F,
   Cold < 45, Chilly < 55, Cool < 65, Mild < 75, Warm < 85, Hot.
 - **After 6 PM** (e.g. when you first set it up in the evening) it shows tomorrow's forecast.
 - **Battery:** 5% and above is normal; 2–4% adds the bottom banner; 0–1% shows the full-screen warning
@@ -143,7 +143,7 @@ Tap **Done** to redraw the display; the page also closes after 10 idle minutes.
 
 ```
 src/            ESP32 firmware (Wi-Fi, HTTP, NTP, deep sleep, display driver)
-lib/doorcore/   portable logic and drawing: schedule, battery curve, forecast parsing, outfits, screens
+lib/doorcore/   portable logic and drawing: schedule, battery curve, forecast parsing, clothing tiers, screens
 host/           desktop unit tests and PNG preview renderer for lib/doorcore
 ```
 

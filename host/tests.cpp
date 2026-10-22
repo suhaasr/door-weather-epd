@@ -216,10 +216,6 @@ static void testAttire() {
   CHECK(tierForFeelsLikeF(70) == Tier::Mild);
   CHECK(tierForFeelsLikeF(80) == Tier::Warm);
   CHECK(tierForFeelsLikeF(85) == Tier::Hot);
-  Outfit o = outfitFor(Tier::Freezing, Gender::Woman);
-  CHECK(o.top == Top::LongCoat && o.gloves && o.beanie && o.scarf && o.shoes == Shoes::Boots);
-  o = outfitFor(Tier::Hot, Gender::Man);
-  CHECK(o.bottom == Bottom::Shorts && o.sunglasses);
   CHECK(celsiusToFahrenheit(100) == 212);
 }
 

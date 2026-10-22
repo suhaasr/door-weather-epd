@@ -38,26 +38,4 @@ const char* tierAdvice(Tier t) {
   return "";
 }
 
-Outfit outfitFor(Tier t, Gender g) {
-  const bool man = g == Gender::Man;
-  switch (t) {
-    case Tier::Freezing:
-      return {man ? Top::Coat : Top::LongCoat, Bottom::Pants, Shoes::Boots, true, true, true, false};
-    case Tier::Cold:
-      return {man ? Top::Coat : Top::LongCoat, Bottom::Pants, Shoes::Boots, true, false, false, false};
-    case Tier::Chilly:
-      return {Top::Jacket, Bottom::Pants, Shoes::Sneakers, false, false, false, false};
-    case Tier::Cool:
-      return {Top::Sweater, Bottom::Pants, Shoes::Sneakers, false, false, false, false};
-    case Tier::Mild:
-      return {man ? Top::TShirt : Top::LongSleeve, Bottom::Pants, Shoes::Sneakers, false, false, false, false};
-    case Tier::Warm:
-      return {Top::TShirt, man ? Bottom::Shorts : Bottom::Skirt, Shoes::Sneakers, false, false, false, false};
-    case Tier::Hot:
-      if (man) return {Top::Tank, Bottom::Shorts, Shoes::Sandals, false, false, false, true};
-      return {Top::Sundress, Bottom::None, Shoes::Sandals, false, false, false, true};
-  }
-  return {Top::TShirt, Bottom::Pants, Shoes::Sneakers, false, false, false, false};
-}
-
 }  // namespace door
