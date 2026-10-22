@@ -25,17 +25,4 @@ const char* tierName(Tier t) {
   return "";
 }
 
-const char* tierAdvice(Tier t) {
-  switch (t) {
-    case Tier::Freezing: return "Heavy coat, hat, scarf & gloves";
-    case Tier::Cold: return "Warm coat, scarf & boots";
-    case Tier::Chilly: return "Light jacket & long pants";
-    case Tier::Cool: return "Sweater & long pants";
-    case Tier::Mild: return "T-shirt & long pants";
-    case Tier::Warm: return "T-shirt & shorts or a skirt";
-    case Tier::Hot: return "Light clothes & sunglasses";
-  }
-  return "";
-}
-
 }  // namespace door

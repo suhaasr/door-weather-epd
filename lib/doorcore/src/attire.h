@@ -8,8 +8,6 @@ enum class Tier : uint8_t { Freezing, Cold, Chilly, Cool, Mild, Warm, Hot };
 // Tiers are chosen on the "feels like" (apparent) temperature in Fahrenheit.
 Tier tierForFeelsLikeF(float feelsLikeF);
 const char* tierName(Tier tier);
-// Short description of what to wear, e.g. "Light jacket & long pants".
-const char* tierAdvice(Tier tier);
 
 inline float celsiusToFahrenheit(float c) { return c * 9.0f / 5.0f + 32.0f; }
 

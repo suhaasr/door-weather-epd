@@ -291,26 +291,21 @@ void drawAttirePanel(Adafruit_GFX& g, int x0, int top, int bottom, const char* l
   const int h = bottom - top;
   const int tx = x0 + 22;
   const int rx = x0 + 215;
-  const int wrapW = x0 + 400 - rx - 14;
-  if (h >= 150) {
-    // Content is ~165 px tall; centre it when there's more room.
-    const int y = top + std::max(0, (h - 175) / 2);
+  if (h >= 130) {
+    const int y = top + (h - 130) / 2;  // centre the ~130 px of content
     text(g, kBodyBold, tx, y + 30, label, kBlack);
     drawTemperature(g, tx, y + 112, temp, unit);
-    text(g, kTitle, rx, y + 76, tierName(tier), kBlack);
-    textWrapped(g, kBody, rx, y + 106, wrapW, 27, tierAdvice(tier), kBlack);
-  } else if (h >= 112) {
-    const int y = top + (h - 112) / 2;
+    text(g, kTitle, rx, y + 98, tierName(tier), kBlack);
+  } else if (h >= 100) {
+    const int y = top + (h - 100) / 2;
     text(g, kBodyBold, tx, y + 24, label, kBlack);
     drawTemperature(g, tx, y + 94, temp, unit);
-    text(g, kTitle, rx, y + 52, tierName(tier), kBlack);
-    textWrapped(g, kBody, rx, y + 80, wrapW, 26, tierAdvice(tier), kBlack);
+    text(g, kTitle, rx, y + 80, tierName(tier), kBlack);
   } else {
-    const int y = top + std::max(0, (h - 88) / 2);
+    const int y = top + std::max(0, (h - 72) / 2);
     text(g, kSmallBold, tx, y + 18, label, kBlack);
     drawTemperature(g, tx, y + 64, temp, unit, true);
-    text(g, kBodyBold, rx, y + 40, tierName(tier), kBlack);
-    textWrapped(g, kSmall, rx, y + 62, wrapW, 20, tierAdvice(tier), kBlack);
+    text(g, kBodyBold, rx, y + 58, tierName(tier), kBlack);
   }
 }
 
@@ -399,7 +394,7 @@ void drawWeatherScreen(Adafruit_GFX& g, const WeatherScreen& s) {
     return bottom - used;
   };
   // Shrink the rain banner (and reminders) when everything wouldn't fit.
-  const bool compact = panelRoom(rainHeight(s, false)) < 150;
+  const bool compact = panelRoom(rainHeight(s, false)) < 130;
   if (compact && remindersH) remindersH = 48;
 
   int top = 56;

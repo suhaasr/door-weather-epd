@@ -6,7 +6,7 @@ A battery-powered 7.5" e-ink display for the front door. Each morning it shows:
   hour-by-hour bar chart (6 AM–10 PM), so you can see if it'll rain on the way home,
 - active National Weather Service alerts (winter storm, heat advisory, high wind, …) as a black strip on top,
 - "Wear sunscreen" (UV ≥ 6), "Windy" (gusts ≥ 30 mph) and air-quality (US AQI > 100, e.g. wildfire smoke) notes,
-- today's "feels like" low and high, each with what to wear (e.g. "Chilly: light jacket & long pants"),
+- today's "feels like" low and high, each labelled with a tier (Freezing, Cold, Chilly, Cool, Mild, Warm, Hot),
 - the weekday and date (`YYYY-MM-DD`), update time and battery level, so you can tell it refreshed today,
 - an estimate of the days/weeks of battery left, based on how fast it has drained since the last charge.
 
@@ -141,7 +141,7 @@ Tap **Done** to redraw the display; the page also closes after 10 idle minutes.
   wake, and the firmware learns the ESP32 sleep-timer drift so wakes stay on the hour.
 - **Rain:** "likely" means any hour from now until midnight has ≥ 10% precipitation probability (snow counts).
   The subtitle shows the peak chance and the time span.
-- **Feels like:** Open-Meteo's daily apparent-temperature min/max. Clothing advice uses 7 tiers: Freezing < 32°F,
+- **Feels like:** Open-Meteo's daily apparent-temperature min/max. The tiers are: Freezing < 32°F,
   Cold < 45, Chilly < 55, Cool < 65, Mild < 75, Warm < 85, Hot.
 - **Alerts:** from `api.weather.gov` for your ZIP's coordinates; the most severe alert in effect that day is
   shown, with "+N more alerts" if there are others. If the alert request fails, the last known alerts are kept.
